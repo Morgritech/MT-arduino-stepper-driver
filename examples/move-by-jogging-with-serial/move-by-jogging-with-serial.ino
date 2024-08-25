@@ -3,7 +3,7 @@
 // Licensed under GNU General Public License v3.0 (GPLv3) License.
 // See the LICENSE file in the project root for full license details.
 
-/// @file move-by-jogging.ino
+/// @file move-by-jogging-with-serial.ino
 /// @brief Example showing how to move a stepper motor by sending start/stop commands over serial, using the MT-arduino-stepper-driver library.
 
 #include <stepper_driver.h>
@@ -68,6 +68,7 @@ void setup() {
   pinMode(kEnaPin, OUTPUT);
 
   // Set stepper driver properties.
+  // If these are not set, default values from the library will be used.
   stepper_driver_.set_pul_delay_us(kPulDelay_us);
   stepper_driver_.set_dir_delay_us(kDirDelay_us);
   stepper_driver_.set_ena_delay_us(kEnaDelay_us);
