@@ -1,7 +1,7 @@
 # MT-arduino-stepper-driver
 Stepper motor driver library for the Arduino platform, to control stepper motors via stepper motor drivers that have a "step-direction-enable" interface.
 
-This library implements non-blocking functions to move a stepper motor by jogging (start/stop on command), or by a set angle (absolute or relative). Constant speed and acceleration are both implemented. The library can handle multiple stepper drivers/motors.
+This library implements non-blocking functions to move a stepper motor by jogging (start/stop on command), or by a set angle (absolute or relative). Constant speed and acceleration are both implemented. The library can handle multiple stepper drivers/motors, including geared stepper motors.
 
 NOTE: This library is currently a work in progress with no releases yet.
 
@@ -9,10 +9,10 @@ The following promising features have already been developed and will be release
 
 - Constant speed motion. Speed can be set in various units, including; microsteps per second, degrees per second, radians per second, and, revolutions per minute.
 - Move by jogging (start/stop on command) in a clockwise or counter-clockwise direction.
-- Move by angle. Angles can be provided various units, including; microsteps, degrees, radians, and, revolutions. Also, motion can be absolute (with respect to the start position) or relative (with respect to the current position).
-- Built in functionality to pause/resume motion.
+- Move by angle. Angles can be provided various units, including; microsteps, degrees, radians, and, revolutions. Motion can be absolute (with respect to the start position) or relative (with respect to the current position). Also, motion can be pause/resumed.
+- Built-in functionality to account for geared stepper motors or drive systems with a gearbox.
 - The amount of microsteps to perform a particular motion can be retrieved, which can be used externally to develop synchronised motion between multiple motors.
-- The angular position can be retrieved, which can be used externally to keep track of the soft home/zero position.
+- The angular position can be retrieved, which can be used externally to keep track of the deviation from a start/soft home/zero position.
 
 The following features are in development:
 
