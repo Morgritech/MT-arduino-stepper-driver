@@ -9,7 +9,7 @@ The following promising features have already been developed and will be release
 
 - Constant speed motion. Speed can be set in various units, including; microsteps per second, degrees per second, radians per second, and, revolutions per minute.
 - Move by jogging (start/stop on command) in a clockwise or counter-clockwise direction.
-- Move by angle. Angles can be provided various units, including; microsteps, degrees, radians, and, revolutions. Motion can be absolute (with respect to the start position) or relative (with respect to the current position). Also, motion can be pause/resumed.
+- Move by angle. Angles can be provided in various units, including; microsteps, degrees, radians, and, revolutions. Motion can be absolute (with respect to the start position) or relative (with respect to the current position). Also, motion can be pause/resumed.
 - Built-in functionality to account for geared stepper motors or drive systems with a gearbox.
 - The amount of microsteps to perform a particular motion can be retrieved, which can be used externally to develop synchronised motion between multiple motors.
 - The angular position can be retrieved, which can be used externally to keep track of the deviation from a start/soft home/zero position.
