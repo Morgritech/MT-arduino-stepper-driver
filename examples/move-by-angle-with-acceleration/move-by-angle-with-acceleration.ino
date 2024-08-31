@@ -3,8 +3,8 @@
 // Licensed under GNU General Public License v3.0 (GPLv3) License.
 // See the LICENSE file in the project root for full license details.
 
-/// @file move-by-angle-no-acceleration.ino
-/// @brief Example showing how to move a stepper motor in oscillation by setting an angle, using the MT-arduino-stepper-driver library.
+/// @file move-by-angle-with-acceleration.ino
+/// @brief Example showing how to move a stepper motor (with acceleration/deceleration) in oscillation by setting an angle, using the MT-arduino-stepper-driver library.
 
 #include <stepper_driver.h>
 
@@ -33,9 +33,11 @@ const float kPulDelay_us = 2.5F; ///< For the PUL pin.
 const float kDirDelay_us = 5.0F; ///< For the Dir pin.
 const float kEnaDelay_us = 5.0F; ///< For the Ena pin.
 /// Sweep angle during oscillation.
-const float kSweepAngleDegrees = 90.0F; // 90 degrees sweep angle.
+const float kSweepAngleDegrees = 3600.0F; // 3600/360 = 10 revolutions sweep angle.
 /// Speed.
-const double kSpeed_RPM = 20.0; ///< Rotation speed (RPM).
+double kSpeed_RPM = 150.0; ///< Rotation speed (RPM).
+/// Acceleration/deceleration.
+const double kAcceleration_microsteps_per_s_per_s = 7000.0; ///< Acceleration (microsteps per second-squared).
 /// @}
 
 /// @{
@@ -63,6 +65,8 @@ void setup() {
   stepper_driver_.set_dir_delay_us(kDirDelay_us);
   stepper_driver_.set_ena_delay_us(kEnaDelay_us);
   stepper_driver_.SetSpeed(kSpeed_RPM, mt::StepperDriver::SpeedUnits::kRevolutionsPerMinute);
+  stepper_driver_.SetAcceleration(kAcceleration_microsteps_per_s_per_s,
+                                  mt::StepperDriver::AccelerationUnits::kMicrostepsPerSecondPerSecond);
 
   // Activate the stepper driver.
   //stepper_driver.set_power_state(mt::StepperDriver::PowerState::kEnabled)// This is usually activated by default, hence this may not be required.
