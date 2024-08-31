@@ -13,9 +13,6 @@ The following promising features have already been developed and will be release
 - Built-in functionality to account for geared stepper motors or drive systems with a gearbox.
 - The amount of microsteps to perform a particular motion can be retrieved, which can be used externally to develop synchronised motion between multiple motors.
 - The angular position can be retrieved, which can be used externally to keep track of the deviation from a start/soft home/zero position.
-
-The following features are in development:
-
 - Acceleration. Acceleration can be set in various units, including; microsteps per second squared, degrees per second squared, radians per second squared, and, revolutions per minute squared.
 
 See the "examples" folder for how to get started on using the library.
