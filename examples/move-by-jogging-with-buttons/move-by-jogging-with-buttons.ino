@@ -81,6 +81,7 @@ void setup() {
   pinMode(kEnaPin, OUTPUT);
 
   // Set stepper driver properties.
+  // If these are not set, default values from the library will be used.
   stepper_driver_.set_pul_delay_us(kPulDelay_us);
   stepper_driver_.set_dir_delay_us(kDirDelay_us);
   stepper_driver_.set_ena_delay_us(kEnaDelay_us);
