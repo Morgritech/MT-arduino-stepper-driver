@@ -10,9 +10,9 @@
 
 /// @{
 /// @brief GPIO pins.
-const uint8_t kPulPin = 11; ///< For the stepper driver PUL/STP/CLK (pulse/step) interface.
-const uint8_t kDirPin = 12; ///< For the stepper driver DIR/CW (direction) interface.
-const uint8_t kEnaPin = 13; ///< For the stepper driver ENA/EN (enable) interface.
+const uint16_t kPulPin = 11; ///< For the stepper driver PUL/STP/CLK (pulse/step) interface.
+const uint16_t kDirPin = 12; ///< For the stepper driver DIR/CW (direction) interface.
+const uint16_t kEnaPin = 13; ///< For the stepper driver ENA/EN (enable) interface.
 /// @}
 
 /// @{
@@ -27,20 +27,20 @@ const char kDecreaseSpeedMessage = '-'; ///< Decrease motor speed.
 
 /// @{
 /// @brief Stepper motor/drive system properties.
-const float kFullStepAngleDegrees = 1.8F; ///< The full step angle in degrees. Obtained from the motor data sheet.
-const double kGearRatio = 1.0; ///< The gear ratio (1 if not using a gearing system or a geared stepper motor).
+const float kFullStepAngle_degrees = 1.8F; ///< The full step angle in degrees. Obtained from the motor data sheet.
+const float kGearRatio = 1.0F; ///< The gear ratio (1 if not using a gearing system or a geared stepper motor).
 /// @}
 
 /// @{
 /// @brief Stepper driver properties.
-const uint8_t kMicrostepMode = 8; ///< Microstep mode (1/8). Remember to change the setting on the stepper driver to match.
+const uint16_t kMicrostepMode = 8; ///< Microstep mode (1/8). Remember to change the setting on the stepper driver to match.
 /// Minimum time (us) to delay after changing the state of a pin. Obtained from the stepper driver data sheet.
 /// These values are for the StepperOnline DM542T stepper driver, but should work for most stepper drivers.
 const float kPulDelay_us = 2.5F; ///< For the PUL pin.
 const float kDirDelay_us = 5.0F; ///< For the Dir pin.
 const float kEnaDelay_us = 5.0F; ///< For the Ena pin.
 /// Speed.
-double kSpeed_RPM = 20.0; ///< Rotation speed (RPM).
+float kSpeed_RPM = 20.0; ///< Rotation speed (RPM).
 const float kSpeedUpdater_RPM = 1.0F; ///< Amount (RPM) by which to increase/decrease speed when a speed message is received over serial.
 /// @}
 
@@ -50,7 +50,7 @@ const uint16_t kStartupTime_ms = 1000; ///< Minimum startup/boot time in millise
 /// @}
 
 /// @brief Stepper Driver instance for the stepper motor.
-mt::StepperDriver stepper_driver(kPulPin, kDirPin, kEnaPin, kMicrostepMode, kFullStepAngleDegrees, kGearRatio);
+mt::StepperDriver stepper_driver(kPulPin, kDirPin, kEnaPin, kMicrostepMode, kFullStepAngle_degrees, kGearRatio);
 //mt::StepperDriver stepper_driver(kPulPin, kDirPin, kEnaPin); // Default values are used for: microstep mode = 1, full step angle = 1.8, and gear ratio = 1.  
 
 /// @brief The main application entry point for initialisation tasks.
@@ -69,10 +69,10 @@ void setup() {
 
   // Set stepper driver properties.
   // If these are not set, default values from the library will be used.
-  stepper_driver_.set_pul_delay_us(kPulDelay_us);
-  stepper_driver_.set_dir_delay_us(kDirDelay_us);
-  stepper_driver_.set_ena_delay_us(kEnaDelay_us);
-  stepper_driver_.SetSpeed(kSpeed_RPM, mt::StepperDriver::SpeedUnits::kRevolutionsPerMinute);
+  stepper_driver.set_pul_delay_us(kPulDelay_us);
+  stepper_driver.set_dir_delay_us(kDirDelay_us);
+  stepper_driver.set_ena_delay_us(kEnaDelay_us);
+  stepper_driver.SetSpeed(kSpeed_RPM, mt::StepperDriver::SpeedUnits::kRevolutionsPerMinute);
 
   // Activate the stepper driver.
   //stepper_driver.set_power_state(mt::StepperDriver::PowerState::kEnabled)// This is usually activated by default, hence this may not be required.
@@ -124,7 +124,7 @@ void loop() {
       }
       case kIncreaseSpeedMessage: {
         kSpeed_RPM = kSpeed_RPM + kSpeedUpdater_RPM;
-        stepper_driver_.SetSpeed(kSpeed_RPM, mt::StepperDriver::SpeedUnits::kRevolutionsPerMinute);
+        stepper_driver.SetSpeed(kSpeed_RPM, mt::StepperDriver::SpeedUnits::kRevolutionsPerMinute);
         Serial.print(F("Speed (RPM) = "));
         Serial.println(kSpeed_RPM);
         break;
@@ -132,7 +132,7 @@ void loop() {
       case kDecreaseSpeedMessage: {
         if (kSpeed_RPM >= 0.0) {
           kSpeed_RPM = kSpeed_RPM - kSpeedUpdater_RPM;
-          stepper_driver_.SetSpeed(kSpeed_RPM, mt::StepperDriver::SpeedUnits::kRevolutionsPerMinute);
+          stepper_driver.SetSpeed(kSpeed_RPM, mt::StepperDriver::SpeedUnits::kRevolutionsPerMinute);
         }
         Serial.print(F("Speed (RPM) = "));
         Serial.println(kSpeed_RPM);
@@ -147,6 +147,6 @@ void loop() {
 
   // Move the motor.
   if (move_motor == true) {
-    stepper_driver_.MoveByJogging(motion_direction); // This must be called periodically.
+    stepper_driver.MoveByJogging(motion_direction); // This must be called periodically.
   }
 }
