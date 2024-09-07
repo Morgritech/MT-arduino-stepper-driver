@@ -48,10 +48,11 @@ void StepperDriver::SetSpeed(float speed, SpeedUnits speed_units) {
   }
 
   if (speed_microsteps_per_s_ == 0) {
-    microstep_period_us_ = 0.0; // (us).
+    microstep_period_us_ = 0; // (us).
   }
   else {
-    microstep_period_us_ = 1000000.0 / (speed_microsteps_per_s_); // (us).
+    float microstep_period_us = 1000000.0 / (speed_microsteps_per_s_); // (us).
+    microstep_period_us_ = microstep_period_us;
   }
 }
 
@@ -141,7 +142,7 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
   if (power_state_ == PowerState::kDisabled) {
     motion_type = MotionType::kStopAndReset;
   }
-  else if (microstep_period_us_ == 0.0) {
+  else if (microstep_period_us_ == 0) {
     // Pause if the set speed is 0.
     motion_type = MotionType::kPause;
   }
@@ -190,7 +191,7 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
       break;
     }
     case MotionStatus::kAccelerate: {
-      if (acceleration_microsteps_per_s_per_s_ == 0.0) {
+      if (acceleration_microsteps_per_s_per_s_ == 0) {
         // No acceleration/deceleration.
         motion_status_ = MotionStatus::kConstantSpeed;
       }
@@ -259,7 +260,7 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
       break;
     }
     case MotionStatus::kConstantSpeed: {
-      if (acceleration_microsteps_per_s_per_s_ == 0.0) {
+      if (acceleration_microsteps_per_s_per_s_ == 0) {
         // No acceleration/deceleration.
         if (relative_microsteps_to_move_ == 0) {
           //Finished constant speed motion. Indicate motion complete.
@@ -310,7 +311,7 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
 }
 
 void StepperDriver::MoveByJogging(MotionDirection direction) {
-  if (power_state_ == PowerState::kDisabled || microstep_period_us_ == 0.0) return;
+  if (power_state_ == PowerState::kDisabled || microstep_period_us_ == 0) return;
 
   if (jog_direction_ != direction) {
     // Direction has changed.
@@ -357,15 +358,15 @@ float StepperDriver::GetAngularPosition(AngleUnits angle_units) const {
 }
 
 void StepperDriver::set_pul_delay_us(float pul_delay_us) {
-  pul_delay_us_ = round(pul_delay_us);
+  pul_delay_us_ = pul_delay_us;
 }
 
 void StepperDriver::set_dir_delay_us(float dir_delay_us) {
-  dir_delay_us_ = round(dir_delay_us);
+  dir_delay_us_ = dir_delay_us;
 }
 
 void StepperDriver::set_ena_delay_us(float ena_delay_us) {
-  ena_delay_us_ = round(ena_delay_us);
+  ena_delay_us_ = ena_delay_us;
 }
 
 void StepperDriver::set_power_state(PowerState power_state) {

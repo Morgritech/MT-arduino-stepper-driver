@@ -199,10 +199,10 @@ class StepperDriver {
   uint32_t microsteps_after_constant_speed_ = 0; ///< Expected number of microsteps remaining after constant speed motion has completed (microsteps).
   /// Speed.
   float speed_microsteps_per_s_ = 0.0; ///< Target speed (microsteps/s).
-  float microstep_period_us_ = 100000.0; ///< Target speed based on the microstep period (us) between microsteps.
+  uint32_t microstep_period_us_ = 100000.0; ///< Target speed based on the microstep period (us) between microsteps.
   float vi_microsteps_per_s_ = 0.0; ///< ith speed (microsteps/s), used to calculate Ti_us_. Morgridge*.
   float Ti_us_ = 0.0; ///< ith microstep period (us), used to set the microstep_period_in_flux_us. Morgridge*.
-  float microstep_period_in_flux_us_ = 0.0; ///< The microstep period (us) that is changing due to acceleration/deceleration.
+  uint32_t microstep_period_in_flux_us_ = 0.0; ///< The microstep period (us) that is changing due to acceleration/deceleration.
   uint64_t reference_microstep_time_us_ = 0; ///< Reference time (us) for the microstep period.
   float Cn_ = 0.0; ///< nth speed (us), used to set microstep_period_in_flux_us. Austin*.
   float p_ = 0.0; ///< ith speed (us), used to set microstep_period_in_flux_us. Eiderman*.
