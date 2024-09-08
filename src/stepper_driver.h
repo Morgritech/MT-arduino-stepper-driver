@@ -17,10 +17,16 @@ namespace mt {
 class StepperDriver {
  public:
 
+  /// @brief Enum of GPIO pin states.
+  enum class PinState {
+    kLow = 0,
+    kHigh,
+  };
+
   /// @brief Enum of power states based on the ENA/EN pin.
   enum class PowerState {
-    kEnabled = 0,
-    kDisabled,
+    kDisabled = 0,
+    kEnabled,
   };
 
   /// @brief Enum of angular speed unit.
@@ -128,6 +134,14 @@ class StepperDriver {
   /// @return The current angular position.
   float GetAngularPosition(AngleUnits angle_units) const;
 
+  /// @brief Set the ENA pin state when the motor is enabled (powered).
+  /// @param ena_pin_enabled_state The pin state.
+  void set_ena_pin_enabled_state(PinState ena_pin_enabled_state);
+
+  /// @brief Set the DIR pin state for positive motion direction.
+  /// @param dir_pin_positive_direction_state The pin state.
+  void set_dir_pin_positive_direction_state(PinState dir_pin_positive_direction_state);
+
   /// @brief Set the minimum time (us) for a low or high-level pulse of the PUL pin.
   /// @param pul_delay_us The minimum PUL low or high-level delay (us).
   void set_pul_delay_us(float pul_delay_us);
@@ -140,7 +154,7 @@ class StepperDriver {
   /// @param ena_delay_us The minimum ENA change delay (us).
   void set_ena_delay_us(float ena_delay_us);
 
-  /// @brief Set the ENA/EN (enable) pin to control the power state (enable or disable) the motor.
+  /// @brief Set the ENA/EN (enable) pin to control the power state (enable or disable) of the motor.
   /// @param power_state The power state.
   void set_power_state(PowerState power_state);
 
@@ -170,6 +184,14 @@ class StepperDriver {
   uint16_t pul_pin_; ///< PUL/STP/CLK (pulse/step/clock) pin.
   uint16_t dir_pin_; ///< DIR/CW (direction) pin.
   uint16_t ena_pin_; ///< ENA/EN (enable) pin.
+  /// @}
+
+  /// @{
+  /// @brief Default pin states.
+  PinState ena_pin_enabled_state_ = PinState::kLow; ///< The ENA pin state when the motor is enabled (powered).
+  PinState ena_pin_disabled_state_ = PinState::kHigh; ///< The ENA pin state when motor is disabled (not powered).
+  PinState dir_pin_positive_direction_state_ = PinState::kHigh; ///< The DIR pin state for positive motion direction.
+  PinState dir_pin_negative_direction_state_ = PinState::kLow; ///< The DIR pin state for negative motion direction.
   /// @}
 
   /// @{

@@ -135,12 +135,12 @@ uint32_t StepperDriver::CalculateRelativeMicrostepsToMoveByAngle(float angle, An
     if (relative_angle_microsteps < 0) {
       // Negative motion direction.
       angular_position_updater_microsteps_ = -1;
-      digitalWrite(dir_pin_, LOW);
+      digitalWrite(dir_pin_, static_cast<uint8_t>(dir_pin_negative_direction_state_));
     }
     else if (relative_angle_microsteps > 0) {
       // Positive motion direction.
       angular_position_updater_microsteps_ = 1;
-      digitalWrite(dir_pin_, HIGH);
+      digitalWrite(dir_pin_, static_cast<uint8_t>(dir_pin_positive_direction_state_));
     }
 
     delayMicroseconds(dir_delay_us_);
@@ -335,10 +335,10 @@ void StepperDriver::MoveByJogging(MotionDirection direction) {
     jog_direction_ = direction;
 
     if (jog_direction_ == MotionDirection::kNegative) {
-      digitalWrite(dir_pin_, LOW); 
+      digitalWrite(dir_pin_, static_cast<uint8_t>(dir_pin_negative_direction_state_)); 
     }
     else if (jog_direction_ == MotionDirection::kPositive) {
-      digitalWrite(dir_pin_, HIGH); 
+      digitalWrite(dir_pin_, static_cast<uint8_t>(dir_pin_positive_direction_state_)); 
     }
 
     delayMicroseconds(dir_delay_us_); 
@@ -374,6 +374,26 @@ float StepperDriver::GetAngularPosition(AngleUnits angle_units) const {
   return angular_position;
 }
 
+void StepperDriver::set_ena_pin_enabled_state(PinState ena_pin_enabled_state) {
+  ena_pin_enabled_state_ = ena_pin_enabled_state;
+  if (ena_pin_enabled_state_ == PinState::kHigh) {
+    ena_pin_disabled_state_ = PinState::kLow; 
+  }
+  else { 
+    ena_pin_disabled_state_ = PinState::kHigh; 
+  }
+}
+
+void StepperDriver::set_dir_pin_positive_direction_state(PinState dir_pin_positive_direction_state) {
+  dir_pin_positive_direction_state_ = dir_pin_positive_direction_state;
+  if (dir_pin_positive_direction_state_ == PinState::kHigh) {
+    dir_pin_negative_direction_state_ = PinState::kLow;
+  }
+  else {
+    dir_pin_negative_direction_state_ =PinState::kHigh;
+  }
+}
+
 void StepperDriver::set_pul_delay_us(float pul_delay_us) {
   pul_delay_us_ = pul_delay_us;
 }
@@ -388,7 +408,13 @@ void StepperDriver::set_ena_delay_us(float ena_delay_us) {
 
 void StepperDriver::set_power_state(PowerState power_state) {
   power_state_ = power_state;
-  digitalWrite(ena_pin_, static_cast<uint8_t>(power_state_));
+  if (power_state_ == PowerState::kEnabled) {
+    digitalWrite(ena_pin_, static_cast<uint8_t>(ena_pin_enabled_state_));    
+  }
+  else {
+    digitalWrite(ena_pin_, static_cast<uint8_t>(ena_pin_disabled_state_));
+  }
+
   delayMicroseconds(ena_delay_us_);
 }
 
