@@ -200,7 +200,7 @@ class StepperDriver {
   uint32_t angle_after_constant_speed_microsteps_ = 0; ///< Expected distance/angle (microsteps) remaining after constant speed motion has completed.
   /// Speed.
   float speed_microsteps_per_s_ = 0.0; ///< Target speed (microsteps/s).
-  float speed_achievable_microsteps_per_s_ = 0.0; ///< Achievable speed based on the set acceleration and travel distance/angle (microsteps/s).
+  //float speed_achievable_microsteps_per_s_ = 0.0; ///< Achievable speed based on the set acceleration and travel distance/angle (microsteps/s).
   uint32_t microstep_period_us_ = 100000.0; ///< Target speed based on the microstep period (us) between microsteps.
   float vi_microsteps_per_s_ = 0.0; ///< ith speed (microsteps/s), used to calculate Ti_us_. Morgridge*.
   float Ti_us_ = 0.0; ///< ith microstep period (us), used to set the microstep_period_in_flux_us. Morgridge*.
