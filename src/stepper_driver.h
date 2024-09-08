@@ -193,12 +193,14 @@ class StepperDriver {
   PowerState power_state_ = PowerState::kEnabled; ///< Power state based on the ENA/EN pin.
   /// Position/distance.
   uint32_t angular_position_microsteps_ = 0; ///< The current angular position (microsteps).
-  uint32_t relative_microsteps_to_move_ = 0; ///< Target number of microsteps to move the motor relative to the current angular position.
+  uint32_t relative_angle_to_move_microsteps_ = 0; ///< Target distance/angle (microsteps) to move the motor relative to the current angular position.
+  uint32_t relative_angle_to_move_in_flux_microsteps_ = 0; ///< The distance/angle (microsteps) to move that is reducing due to the motor moving.
   int8_t angular_position_updater_microsteps_ = 1; ///< Value (microsteps) to increment/decrement the current angular position depending on motor motion direction based on the DIR/CW pin.
-  uint32_t microsteps_after_acceleration_ = 0; ///< Expected number of microsteps remaining after acceleration has completed (microsteps).
-  uint32_t microsteps_after_constant_speed_ = 0; ///< Expected number of microsteps remaining after constant speed motion has completed (microsteps).
+  uint32_t angle_after_acceleration_microsteps_ = 0; ///< Expected distance/angle (microsteps) remaining after acceleration has completed.
+  uint32_t angle_after_constant_speed_microsteps_ = 0; ///< Expected distance/angle (microsteps) remaining after constant speed motion has completed.
   /// Speed.
   float speed_microsteps_per_s_ = 0.0; ///< Target speed (microsteps/s).
+  float speed_achievable_microsteps_per_s_ = 0.0; ///< Achievable speed based on the set acceleration and travel distance/angle (microsteps/s).
   uint32_t microstep_period_us_ = 100000.0; ///< Target speed based on the microstep period (us) between microsteps.
   float vi_microsteps_per_s_ = 0.0; ///< ith speed (microsteps/s), used to calculate Ti_us_. Morgridge*.
   float Ti_us_ = 0.0; ///< ith microstep period (us), used to set the microstep_period_in_flux_us. Morgridge*.

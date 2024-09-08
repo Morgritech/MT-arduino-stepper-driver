@@ -149,9 +149,10 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
 
   switch (motion_type) {
     case MotionType::kStopAndReset: {
-      relative_microsteps_to_move_ = 0;
-      microsteps_after_acceleration_ = 0;
-      microsteps_after_constant_speed_ = 0;
+      relative_angle_to_move_microsteps_ = 0;
+      relative_angle_to_move_in_flux_microsteps_ = 0;
+      angle_after_acceleration_microsteps_ = 0;
+      angle_after_constant_speed_microsteps_ = 0;
       motion_status_ = MotionStatus::kIdle;
       break;
     }
@@ -168,12 +169,13 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
     case MotionType::kRelative: {
       if (motion_status_ == MotionStatus::kIdle || motion_status_ == MotionStatus::kPaused) {
         if (motion_status_ == MotionStatus::kIdle) {
-          relative_microsteps_to_move_ = CalculateRelativeMicrostepsToMoveByAngle(angle, angle_units, motion_type,
+          relative_angle_to_move_microsteps_ = CalculateRelativeMicrostepsToMoveByAngle(angle, angle_units, motion_type,
                                                                                 CalculationOption::kSetupMotion);
+          relative_angle_to_move_in_flux_microsteps_ = relative_angle_to_move_microsteps_;                                                                                
         }
         
-        microsteps_after_acceleration_ = 0;
-        microsteps_after_constant_speed_ = 0;
+        angle_after_acceleration_microsteps_ = 0;
+        angle_after_constant_speed_microsteps_ = 0;
         motion_status_ = MotionStatus::kAccelerate;
         Serial.print(F("Set microstep period (us): ")); Serial.println(microstep_period_us_);
         Serial.print(F("Set acceleration (microsteps/us^2): ")); Serial.println(acceleration_microsteps_per_s_per_s_);
@@ -195,7 +197,7 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
         // No acceleration/deceleration.
         motion_status_ = MotionStatus::kConstantSpeed;
       }
-      else if (microsteps_after_acceleration_ == 0) {
+      else if (angle_after_acceleration_microsteps_ == 0) {
         // Setup a new acceleration.
         // Eiderman*.
         m_ = -R_;
@@ -204,36 +206,38 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
 
         motion_phase_multiplier_ = 1;
         // Calculate the minimum microsteps required to accelerate to; and decelerate from; the set speed.
-        uint32_t min_microsteps_for_acceleration = round((speed_microsteps_per_s_ * speed_microsteps_per_s_)
-                                                         / (2 * acceleration_microsteps_per_s_per_s_)); // (microsteps).
-        Serial.print(F("Relative microsteps to move: ")); Serial.println(relative_microsteps_to_move_);
-        Serial.print(F("Min microsteps for acceleration: ")); Serial.println(min_microsteps_for_acceleration);
-        if (relative_microsteps_to_move_ <= (2 * min_microsteps_for_acceleration)) {
+        uint32_t min_microsteps_for_acceleration = static_cast<uint32_t>((speed_microsteps_per_s_ * speed_microsteps_per_s_)
+                                                         / (2.0 * acceleration_microsteps_per_s_per_s_)); // (microsteps).
+        Serial.print(F("Total relative angle (microsteps) to move: ")); Serial.println(relative_angle_to_move_microsteps_);
+        Serial.print(F("Min angle (microsteps) for acceleration: ")); Serial.println(min_microsteps_for_acceleration);
+        if (relative_angle_to_move_microsteps_ <= (2 * min_microsteps_for_acceleration)) {
           // Setup triangular speed profile; motor will accelerate to achievable speed (<= set speed) for available microsteps, then decelerate to 0.
-          microsteps_after_acceleration_ = round(relative_microsteps_to_move_ / 2);
-          Serial.print(F("Triangular: microsteps after acceleration: ")); Serial.println(microsteps_after_acceleration_);
+          angle_after_acceleration_microsteps_ = static_cast<uint32_t>(relative_angle_to_move_microsteps_ / 2.0);
+          speed_achievable_microsteps_per_s_ = sqrt(2.0 * acceleration_microsteps_per_s_per_s_ * relative_angle_to_move_microsteps_);
+          Serial.print(F("Triangular: angle (microsteps) after acceleration: ")); Serial.println(angle_after_acceleration_microsteps_);
         }
         else {
           // Setup trapezoidal speed profile; motor will accelerate to set speed, move at constant speed, then decelerate to 0.
-          microsteps_after_acceleration_ = relative_microsteps_to_move_ - min_microsteps_for_acceleration;
-          microsteps_after_constant_speed_ = min_microsteps_for_acceleration;
-          Serial.print(F("Trapezoidal: microsteps after acceleration: ")); Serial.println(microsteps_after_acceleration_);
-          Serial.print(F("Trapezoidal: microsteps after constant speed: ")); Serial.println(microsteps_after_constant_speed_);
+          angle_after_acceleration_microsteps_ = relative_angle_to_move_microsteps_ - min_microsteps_for_acceleration;
+          angle_after_constant_speed_microsteps_ = min_microsteps_for_acceleration;
+          speed_achievable_microsteps_per_s_ = speed_microsteps_per_s_;
+          Serial.print(F("Trapezoidal: angle (microsteps) after acceleration: ")); Serial.println(angle_after_acceleration_microsteps_);
+          Serial.print(F("Trapezoidal: angle (microsteps) after constant speed: ")); Serial.println(angle_after_constant_speed_microsteps_);
         }
 
         Serial.println(F("Starting acceleration."));
       }
       else {
         // Acceleration already in progress.
-        if (relative_microsteps_to_move_ <= microsteps_after_acceleration_) {
+        if (relative_angle_to_move_in_flux_microsteps_ <= angle_after_acceleration_microsteps_) {
         //if (microstep_period_in_flux_us_ <= microstep_period_us_) {
           // Finished acceleration.
-          if (microsteps_after_constant_speed_ == 0) {
+          if (angle_after_constant_speed_microsteps_ == 0) {
             // Triangular speed profile. Setup deceleration.
             // Eiderman*.
             m_ = R_;
             // Austin*.
-            n_ = -microsteps_after_acceleration_;
+            n_ = -angle_after_acceleration_microsteps_;
 
             motion_phase_multiplier_ = -1;
             motion_status_ = MotionStatus::kDecelerate;
@@ -262,7 +266,7 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
     case MotionStatus::kConstantSpeed: {
       if (acceleration_microsteps_per_s_per_s_ == 0) {
         // No acceleration/deceleration.
-        if (relative_microsteps_to_move_ == 0) {
+        if (relative_angle_to_move_in_flux_microsteps_ == 0) {
           //Finished constant speed motion. Indicate motion complete.
           motion_status_ = MotionStatus::kIdle;
         }
@@ -271,14 +275,14 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
           MoveByMicrostepAtMicrostepPeriod();
         }
       }
-      else if (microsteps_after_constant_speed_ != 0) {
+      else if (angle_after_constant_speed_microsteps_ != 0) {
         // Trapezoidal speed profile.
-        if (relative_microsteps_to_move_ <= microsteps_after_constant_speed_) {
+        if (relative_angle_to_move_in_flux_microsteps_ <= angle_after_constant_speed_microsteps_) {
           // Finished constant speed motion. Setup deceleration.
           // Eiderman*.
           m_ = R_;
           // Austin*.
-          n_ = -microsteps_after_constant_speed_;
+          n_ = -angle_after_constant_speed_microsteps_;
 
           motion_phase_multiplier_ = -1;
           motion_status_ = MotionStatus::kDecelerate;
@@ -293,7 +297,7 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
       break;
     }
     case MotionStatus::kDecelerate: {
-      if (relative_microsteps_to_move_ == 0) {
+      if (relative_angle_to_move_in_flux_microsteps_ == 0) {
         // Finished decelerating. Indicate motion complete.
         motion_status_ = MotionStatus::kIdle;
         Serial.println(F("Finished decel., going to idle."));        
@@ -383,9 +387,9 @@ void StepperDriver::MoveByMicrostep() {
   digitalWrite(pul_pin_, HIGH);
   delayMicroseconds(pul_delay_us_);
 
-  if (relative_microsteps_to_move_ != 0) {
+  if (relative_angle_to_move_in_flux_microsteps_ != 0) {
     // Move by angle (not by jogging) is in operation.
-    relative_microsteps_to_move_--;
+    relative_angle_to_move_in_flux_microsteps_--;
   }
 
   angular_position_microsteps_ = angular_position_microsteps_ + angular_position_updater_microsteps_;
