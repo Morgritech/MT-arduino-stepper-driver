@@ -80,6 +80,11 @@ void setup() {
   pinMode(kDirPin, OUTPUT);
   pinMode(kEnaPin, OUTPUT);
 
+  // Set the expected behaviour of the stepper driver pins.
+  // If these are not set, default values from the library will be used.
+  stepper_driver.set_ena_pin_enabled_state(mt::StepperDriver::PinState::kLow); // The pin state for giving power to the motor.
+  stepper_driver.set_dir_pin_positive_direction_state(mt::StepperDriver::PinState::kHigh); // The pin state for a "positive" motion direction.
+
   // Set stepper driver properties.
   // If these are not set, default values from the library will be used.
   stepper_driver.set_pul_delay_us(kPulDelay_us);
