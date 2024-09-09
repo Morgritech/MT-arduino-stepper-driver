@@ -14,6 +14,7 @@ The following promising features have already been developed and will be release
 - The amount of microsteps to perform a particular motion can be retrieved, which can be used externally to develop synchronised motion between multiple motors.
 - The angular position can be retrieved, which can be used externally to keep track of the deviation from a start/soft home/zero position.
 - Acceleration. Acceleration can be set in various units, including; microsteps per second squared, degrees per second squared, radians per second squared, and, revolutions per minute squared.
+- User selectable acceleration algorithms. Choose from 3 different algorithms; D. Austin 2005, A. Eiderman 2004 and an in-house algorithm developed by J. Morgridge during the creation of this library.
 
 See the "examples" folder for how to get started on using the library.
 
