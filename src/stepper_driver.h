@@ -17,6 +17,13 @@ namespace mt {
 class StepperDriver {
  public:
 
+  /// @brief Enum of acceleration algorithms.
+  enum class AccelerationAlgorithm {
+    kMorgridge24 = 1,
+    kAustin05 = 2,
+    kEiderman04 = 3,
+  };
+
   /// @brief Enum of GPIO pin states.
   enum class PinState {
     kLow = 0,
@@ -134,6 +141,10 @@ class StepperDriver {
   /// @return The current angular position.
   float GetAngularPosition(AngleUnits angle_units) const;
 
+  /// @brief Set the acceleration algorithm to be used for acceleration/deceleration.
+  /// @param acceleration_algorithm The algorithm.
+  void set_acceleration_algorithm(AccelerationAlgorithm acceleration_algorithm);
+
   /// @brief Set the ENA pin state when the motor is enabled (powered).
   /// @param ena_pin_enabled_state The pin state.
   void set_ena_pin_enabled_state(PinState ena_pin_enabled_state);
@@ -178,6 +189,15 @@ class StepperDriver {
 
   /// @brief Move the motor by the minimum step based on the micro-stepping mode, at the speed based on the microstep period (us), that is changing due to acceleration/deceleration.
   void MoveByMicrostepAtMicrostepPeriodInFlux();
+
+  /// @brief Reset parameters used for acceleration/deceleration.
+  void ResetAccelerationParameters();
+
+  /// @brief Helper for printing out debugging information.
+  void DebugHelperForMoveByAngle();
+
+  /// @brief Default acceleration algorithm.
+  AccelerationAlgorithm acceleration_algorithm_ = AccelerationAlgorithm::kMorgridge24;
 
   /// @{
   /// @brief Output pins.
@@ -224,26 +244,31 @@ class StepperDriver {
   float speed_microsteps_per_s_ = 0.0; ///< Target speed (microsteps/s).
   //float speed_achievable_microsteps_per_s_ = 0.0; ///< Achievable speed based on the set acceleration and travel distance/angle (microsteps/s).
   uint32_t microstep_period_us_ = 100000.0; ///< Target speed based on the microstep period (us) between microsteps.
-  float vi_microsteps_per_s_ = 0.0; ///< ith speed (microsteps/s), used to calculate Ti_us_. Morgridge*.
-  float Ti_us_ = 0.0; ///< ith microstep period (us), used to set the microstep_period_in_flux_us. Morgridge*.
+  float vi_microsteps_per_s_ = 0.0; ///< ith speed (microsteps/s), used to calculate Ti_us_. Morgridge 24.
+  float Ti_us_ = 0.0; ///< ith microstep period (us), used to set the microstep_period_in_flux_us. Morgridge 24.
+  float f_ = 1000000.0; ///< Timer frequency (count of timer ticks per sec) (Hz). Austin 05/Eiderman 04.
+  float Cn_ = 0.0; ///< nth speed (us), used to set microstep_period_in_flux_us. Austin 05.
+  float p_ = 0.0; ///< ith speed (us), used to set microstep_period_in_flux_us. Eiderman 04.
+  float v0_ = 0.0; ///< Base speed (microsteps/s) used to calculate the initial value of p. Eiderman 04.
   uint32_t microstep_period_in_flux_us_ = 0.0; ///< The microstep period (us) that is changing due to acceleration/deceleration.
   uint64_t reference_microstep_time_us_ = 0; ///< Reference time (us) for the microstep period.
-  float Cn_ = 0.0; ///< nth speed (us), used to set microstep_period_in_flux_us. Austin*.
-  float p_ = 0.0; ///< ith speed (us), used to set microstep_period_in_flux_us. Eiderman*.
-  float f_ = 1000000.0; ///< Timer frequency (count of timer ticks per sec) (Hz). Austin/Eiderman*.
-  float v0_ = 0.0; ///< Base speed (microsteps/s) used to calculate the initial value of p. Eiderman*.
   /// Acceleration.
   float acceleration_microsteps_per_s_per_s_ = 0.0; ///< Target acceleration (microsteps/s^2).
   uint64_t reference_microstep_flux_time_us_ = 0; ///< Reference time (us) for the microstep period in flux.
-  int8_t motion_phase_multiplier_ = 0; ///< Constant multiplier. (+1 for acceleration, 0 in-between, -1 for deceleration).
-  float R_ = 0.0; ///< Constant multiplier. Eiderman*.
-  float m_ = 0.0; ///< Variable multiplier that depends on movement phase (m_ = -R_ for acceleration, 0 in-between, R_ for deceleration). Eiderman*.
+  // Motion phase constants.
+  int8_t K_ = 0; ///< Constant multiplier. (+1 for acceleration, 0 in-between, -1 for deceleration). Morgridge 24.
+  float R_ = 0.0; ///< Constant multiplier. Eiderman 04.
+  float m_ = 0.0; ///< Variable multiplier that depends on movement phase (m_ = -R_ for acceleration, 0 in-between, R_ for deceleration). Eiderman 04.
   /// Other.
   MotionStatus motion_status_ = MotionStatus::kIdle; ///< The status of the move (by angle) operation.
   MotionDirection jog_direction_ = MotionDirection::kNeutral; ///< The direction of the move (by jogging) operation.
-  int32_t n_ = 0; ///< Iteration counter. Also depends on movement phase (n > 0 for acceleration, n < 0 for deceleration). Austin*.
-  uint32_t i_ = 1; ///< Iteration counter. Eiderman/Morgridge*.
-  float q_ = 0.0; ///< Variable to calculate a more accurate value of p at the expense of processing overhead (i.e., slower). Eiderman*.
+  uint32_t i_ = 1; ///< Iteration counter. Morgridge 24/Eiderman 04.
+  float q_ = 0.0; ///< Variable to calculate a more accurate value of p at the expense of processing overhead (i.e., slower). Eiderman 04.
+  int32_t n_ = 0; ///< Iteration counter. Also depends on movement phase (n > 0 for acceleration, n < 0 for deceleration). Austin 05.
+  /// Debug helpers.
+  bool debug_helper_flag_accel_initial_vars_printed_ = false; ///< Flag to aid in printing initial debug outputs during acceleration only once.
+  bool debug_helper_flag_cspeed_initial_vars_printed_ = false; ///< Flag to aid in printing initial debug outputs during constant speed only once.
+  bool debug_helper_flag_decel_initial_vars_printed_ = false; ///< Flag to aid in printing initial debug outputs during deceleration speed only once.
   /// @}
 };
 
