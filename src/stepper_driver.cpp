@@ -296,7 +296,7 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
     }
   }
 
-  DebugHelperForMoveByAngle();
+  if (debug_enabled_ == true) DebugHelperForMoveByAngle(); // Debugging.
   return motion_status_;
 }
 
@@ -349,7 +349,7 @@ float StepperDriver::GetAngularPosition(AngleUnits angle_units) const {
 
 void StepperDriver::set_acceleration_algorithm(AccelerationAlgorithm acceleration_algorithm) {
   acceleration_algorithm_ = acceleration_algorithm;
-  if (acceleration_algorithm_ == AccelerationAlgorithm::kEiderman04) R_ = acceleration_microsteps_per_s_per_s_ / fsquared_; // Eiderman '04, equation 19.
+  if (acceleration_algorithm_ == AccelerationAlgorithm::kEiderman04) R_ = acceleration_microsteps_per_s_per_s_ / fsquared_; // Eiderman '04, Equation 19.
   // Reset relative_angle_to_move_microsteps_, relative_angle_to_move_in_flux_microsteps_, angle_after_acceleration_microsteps_, n_, i_.
   ResetAccelerationParameters();
 }
@@ -527,9 +527,9 @@ void StepperDriver::ResetAccelerationParameters() {
 }
 
 void StepperDriver::DebugHelperForMoveByAngle() {
-#if 0
+#if 0 // 0 to disable debug outputs, 1 to enable debug ouputs.
   if (motion_status_ == MotionStatus::kAccelerate) {
-    if (debug_helper_flag_accel_initial_vars_printed_ == false) {
+    if (debug_helper_accel_initial_vars_printed_ == false) {
       Serial.print(F("Set microstep period (us): ")); Serial.println(microstep_period_us_);
       Serial.print(F("Set acceleration (microsteps/us^2): ")); Serial.println(acceleration_microsteps_per_s_per_s_);
 
@@ -550,21 +550,21 @@ void StepperDriver::DebugHelperForMoveByAngle() {
         Serial.println(F("Starting acceleration."));
       }
 
-      debug_helper_flag_accel_initial_vars_printed_ = true;
+      debug_helper_accel_initial_vars_printed_ = true;
     }
   }
   else if (motion_status_ == MotionStatus::kConstantSpeed) {
     // Constant speed only OR trapezoidal speed profile.
-    if (debug_helper_flag_cspeed_initial_vars_printed_ == false) {
+    if (debug_helper_cspeed_initial_vars_printed_ == false) {
       Serial.println(F("Constant speed phase."));
       Serial.print(F("Microstep period (us) reached: ")); Serial.println(microstep_period_in_flux_us_);
 
-      debug_helper_flag_cspeed_initial_vars_printed_ = true;
+      debug_helper_cspeed_initial_vars_printed_ = true;
     }
   }
   else if (motion_status_ == MotionStatus::kDecelerate) {
     // Triangular or trapezoidal speed profiles.
-    if (debug_helper_flag_cspeed_initial_vars_printed_ == false) {
+    if (debug_helper_cspeed_initial_vars_printed_ == false) {
       Serial.print(F("Starting deceleration."));
 
       if (acceleration_microsteps_per_s_per_s_ != 0 && angle_after_constant_speed_microsteps_ == 0) {
@@ -572,7 +572,7 @@ void StepperDriver::DebugHelperForMoveByAngle() {
         Serial.print(F("Microstep period (us) reached: ")); Serial.println(microstep_period_in_flux_us_);
       }
 
-      debug_helper_flag_decel_initial_vars_printed_ = true;
+      debug_helper_decel_initial_vars_printed_ = true;
     }
   }
 
