@@ -176,7 +176,7 @@ class StepperDriver {
  private:
 
   /// @brief The value of pi for math calculations.
-  static const double kPi = 3.14159265358979323846;
+  static const double kPi_ = 3.14159265358979323846;
 
   /// @brief Pulse the PUL/STP/CLK pin to move the motor by the minimum step based on the micro-stepping mode.
   void MoveByMicrostep();
@@ -196,6 +196,14 @@ class StepperDriver {
   /// @brief Helper for printing out debugging information.
   void DebugHelperForMoveByAngle();
 
+  /// @{
+  /// @brief Pre-calculated unit conversion constants.
+  double k180DividedByProductOfPiAndMicrostepAngleDegrees_; ///< 180 / (pi x microstep angle in degrees)
+  float k6DividedByMicrostepAngleDegrees_; ///< 6 / microstep angle in degrees
+  float k360DividedByMicrostepAngleDegrees_; ///< 360 / microstep angle in degrees
+  double kPiTimesMicrostepAngleDegreesDivided180_; ///< (pi x microstep angle in degrees) / 180
+  float kMicrostepAngleDegreesDivided360_; ///< microstep angle in degrees / 360
+  
   /// @brief Default acceleration algorithm.
   AccelerationAlgorithm acceleration_algorithm_ = AccelerationAlgorithm::kMorgridge24;
 
@@ -247,6 +255,7 @@ class StepperDriver {
   float vi_microsteps_per_s_ = 0.0; ///< ith speed (microsteps/s), used to calculate Ti_us_. Morgridge 24.
   float Ti_us_ = 0.0; ///< ith microstep period (us), used to set the microstep_period_in_flux_us. Morgridge 24.
   float f_ = 1000000.0; ///< Timer frequency (count of timer ticks per sec) (Hz). Austin 05/Eiderman 04.
+  double fsquared_ = f_ * f_; ///< Eiderman 04.
   float Cn_ = 0.0; ///< nth speed (us), used to set microstep_period_in_flux_us. Austin 05.
   float p_ = 0.0; ///< ith speed (us), used to set microstep_period_in_flux_us. Eiderman 04.
   float v0_ = 0.0; ///< Base speed (microsteps/s) used to calculate the initial value of p. Eiderman 04.

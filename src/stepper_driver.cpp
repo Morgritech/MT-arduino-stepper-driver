@@ -17,10 +17,17 @@ StepperDriver::StepperDriver(uint16_t pul_pin, uint16_t dir_pin, uint16_t ena_pi
   pul_pin_ = pul_pin;
   dir_pin_ = dir_pin;
   ena_pin_ = ena_pin;
+
   full_step_angle_degrees_ = full_step_angle_degrees;
   microstep_mode_ = microstep_mode;
   gear_ratio_ = gear_ratio;
   microstep_angle_degrees_ = full_step_angle_degrees_ / (gear_ratio_ * microstep_mode_);
+
+  k180DividedByProductOfPiAndMicrostepAngleDegrees_ = 180.0 / (kPi_ * microstep_angle_degrees_);
+  k6DividedByMicrostepAngleDegrees_ = 6.0 / microstep_angle_degrees_;
+  k360DividedByMicrostepAngleDegrees_ = 360.0 / microstep_angle_degrees_;
+  kPiTimesMicrostepAngleDegreesDivided180_ = (kPi_ * microstep_angle_degrees_) / 180.0;
+  kMicrostepAngleDegreesDivided360_ = microstep_angle_degrees_ / 360.0;
 }
 
 StepperDriver::~StepperDriver() {}
@@ -38,11 +45,11 @@ void StepperDriver::SetSpeed(float speed, SpeedUnits speed_units) {
       break;
     }
     case SpeedUnits::kRadiansPerSecond: {
-      speed_microsteps_per_s_ = (180.0 * speed) / (kPi * microstep_angle_degrees_);
+      speed_microsteps_per_s_ = k180DividedByProductOfPiAndMicrostepAngleDegrees_ * speed;
       break;
     }
     case SpeedUnits::kRevolutionsPerMinute: {
-      speed_microsteps_per_s_ = (6.0 * speed) / microstep_angle_degrees_;
+      speed_microsteps_per_s_ = k6DividedByMicrostepAngleDegrees_ * speed;
       break;
     }
   }
@@ -75,16 +82,16 @@ void StepperDriver::SetAcceleration(float acceleration, AccelerationUnits accele
       break;
     }
     case AccelerationUnits::kRadiansPerSecondPerSecond: {
-      acceleration_microsteps_per_s_per_s_ = (180.0 * acceleration) / (kPi * microstep_angle_degrees_);
+      acceleration_microsteps_per_s_per_s_ = k180DividedByProductOfPiAndMicrostepAngleDegrees_ * acceleration;
       break;
     }
     case AccelerationUnits::kRevolutionsPerMinutePerMinute: {
-      acceleration_microsteps_per_s_per_s_ = (6.0 * acceleration) / microstep_angle_degrees_;
+      acceleration_microsteps_per_s_per_s_ = k6DividedByMicrostepAngleDegrees_ * acceleration;
       break;
     }
   }
 
-  if (acceleration_algorithm_ == AccelerationAlgorithm::kEiderman04) R_ = acceleration_microsteps_per_s_per_s_ / (f_ * f_); // Equation 19.
+  if (acceleration_algorithm_ == AccelerationAlgorithm::kEiderman04) R_ = acceleration_microsteps_per_s_per_s_ / fsquared_; // Eiderman '04, Equation 19.
 
   if (motion_status_ != MotionStatus::kIdle && motion_status_ != MotionStatus::kPaused) {
     // Acceleration changed mid-motion.
@@ -108,11 +115,11 @@ uint32_t StepperDriver::CalculateRelativeMicrostepsToMoveByAngle(float angle, An
       break;
     }
     case AngleUnits::kRadians: {
-      angle_microsteps = (180.0 * angle) / (kPi * microstep_angle_degrees_);
+      angle_microsteps = k180DividedByProductOfPiAndMicrostepAngleDegrees_ * angle;
       break;
     }
     case AngleUnits::kRevolutions: {
-      angle_microsteps = (360.0 * angle) / microstep_angle_degrees_;
+      angle_microsteps = k360DividedByMicrostepAngleDegrees_ * angle;
       break;
     }
   }
@@ -328,11 +335,11 @@ float StepperDriver::GetAngularPosition(AngleUnits angle_units) const {
       break;
     }
     case AngleUnits::kRadians: {
-      angular_position = (angular_position_microsteps_ * kPi * microstep_angle_degrees_) / 180.0;
+      angular_position = angular_position_microsteps_ * kPiTimesMicrostepAngleDegreesDivided180_;
       break;
     }
     case AngleUnits::kRevolutions: {
-      angular_position = (angular_position_microsteps_ * microstep_angle_degrees_) / 360.0;
+      angular_position = angular_position_microsteps_ * kMicrostepAngleDegreesDivided360_;
       break;
     }
   }
@@ -342,7 +349,7 @@ float StepperDriver::GetAngularPosition(AngleUnits angle_units) const {
 
 void StepperDriver::set_acceleration_algorithm(AccelerationAlgorithm acceleration_algorithm) {
   acceleration_algorithm_ = acceleration_algorithm;
-  if (acceleration_algorithm_ == AccelerationAlgorithm::kEiderman04) R_ = acceleration_microsteps_per_s_per_s_ / (f_ * f_); // Equation 19.
+  if (acceleration_algorithm_ == AccelerationAlgorithm::kEiderman04) R_ = acceleration_microsteps_per_s_per_s_ / fsquared_; // Eiderman '04, equation 19.
   // Reset relative_angle_to_move_microsteps_, relative_angle_to_move_in_flux_microsteps_, angle_after_acceleration_microsteps_, n_, i_.
   ResetAccelerationParameters();
 }
@@ -431,14 +438,14 @@ void StepperDriver::CalculateMicrostepPeriodInFlux() {
         // Acceleration/deceleration.
         if(i_ == 1) {
           // From stand-still. Calculate the speed/microstep period for i = 1.
-          vi_microsteps_per_s_ = acceleration_microsteps_per_s_per_s_ * sqrt(2.0 / acceleration_microsteps_per_s_per_s_); // Equation 30.
+          vi_microsteps_per_s_ = acceleration_microsteps_per_s_per_s_ * sqrt(2.0 / acceleration_microsteps_per_s_per_s_); // Morgridge '24, Equation 30.
         }
         else {
           // Already accelerating/decelerating.
-          vi_microsteps_per_s_ = vi_microsteps_per_s_ + (K_ * (acceleration_microsteps_per_s_per_s_ / vi_microsteps_per_s_)); // Equation 31.
+          vi_microsteps_per_s_ = vi_microsteps_per_s_ + (K_ * (acceleration_microsteps_per_s_per_s_ / vi_microsteps_per_s_)); // Morgridge '24, Equation 31.
         }
 
-        Ti_us_ = 1000000.0 / vi_microsteps_per_s_; // Equation 32.
+        Ti_us_ = 1000000.0 / vi_microsteps_per_s_; // Morgridge '24, Equation 32.
         microstep_period_in_flux_us_ = Ti_us_;
       }
 
@@ -458,11 +465,11 @@ void StepperDriver::CalculateMicrostepPeriodInFlux() {
       else {
         if(n_ == 0) {
           // From stand-still. Calculate the speed/microstep period for n = 0.
-          Cn_ = 0.676 * f_ * sqrt(2.0 / acceleration_microsteps_per_s_per_s_); // Equation 15.
+          Cn_ = 0.676 * f_ * sqrt(2.0 / acceleration_microsteps_per_s_per_s_); // Austin '05, Equation 15.
         }
         else {
           // Already accelerating/decelerating. n > 0 for acceleration, n < 0 for deceleration.
-          Cn_ = Cn_ - ((2.0 * Cn_) / ((4.0 * n_) + 1)); // Equation 13.
+          Cn_ = Cn_ - ((2.0 * Cn_) / ((4.0 * n_) + 1)); // Austin '05, Equation 13.
         }
 
         microstep_period_in_flux_us_ = Cn_;
@@ -483,14 +490,14 @@ void StepperDriver::CalculateMicrostepPeriodInFlux() {
       else {
         if(i_ == 1) {
           // From stand-still. Calculate the speed/microstep period for i = 1.
-          p_ = f_ / sqrt((v0_ * v0_) + (2.0 * acceleration_microsteps_per_s_per_s_)); // Equation 17.
+          p_ = f_ / sqrt((v0_ * v0_) + (2.0 * acceleration_microsteps_per_s_per_s_)); // Eiderman '04, Equation 17.
         }
         else {
           // Already accelerating/decelerating.
           q_ = m_ * p_ * p_;
-          p_ = p_ * (1 + q_); // Equation 20.
-          //p_ = p_ * (1 + q_ + (q_ * q_)); // Equation 23.
-          //p_ = p_ * (1 + q_ + (1.5 * q_ * q_)); // Equation 22.
+          p_ = p_ * (1 + q_); // Eiderman '04, Equation 20.
+          //p_ = p_ * (1 + q_ + (q_ * q_)); // Eiderman '04, Equation 23.
+          //p_ = p_ * (1 + q_ + (1.5 * q_ * q_)); // Eiderman '04, Equation 22.
         }
 
         microstep_period_in_flux_us_ = p_;
