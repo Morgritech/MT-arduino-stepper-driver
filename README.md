@@ -13,6 +13,7 @@ The following features are available:
 - The angular position can be retrieved, which can be used externally to keep track of the deviation from a start/"soft home"/zero position.
 - Acceleration. Acceleration can be set in various units, including; microsteps per second squared, degrees per second squared, radians per second squared, and, revolutions per minute squared.
 - User selectable acceleration algorithms. Choose from 3 different algorithms; Austin D. 2005, Eiderman A. 2004 and an in-house algorithm developed by Morgridge J. 2024 during the creation of this library.
+- The library allows changes in speed and acceleration during motion, however, this may negatively impact the motion especially on relatively slow microcontrollers.
 
 A full development [report](extras/dsdr1001%20Stepper%20Motor%20Control%20Equations%20Issue%2001%2012-09-2024.pdf) showing the equations and algorithms used in the library can be found in the "extras" folder.
 
