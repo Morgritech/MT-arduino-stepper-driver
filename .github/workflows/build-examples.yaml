@@ -20,5 +20,7 @@ jobs:
           libraries: |
             # Install the repository as a library.
             - source-path: ./
+            # Other dependencies for examples.
+            - name: MT-arduino-momentary-button
           sketch-paths: |
             - examples
