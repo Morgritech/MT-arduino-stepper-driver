@@ -176,7 +176,7 @@ class StepperDriver {
  private:
 
   /// @brief The value of pi for math calculations.
-  static const double kPi_ = 3.14159265358979323846;
+  static constexpr double kPi_ = 3.14159265358979323846;
 
   /// @brief Pulse the PUL/STP/CLK pin to move the motor by the minimum step based on the micro-stepping mode.
   void MoveByMicrostep();

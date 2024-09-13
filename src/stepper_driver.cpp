@@ -124,7 +124,7 @@ uint32_t StepperDriver::CalculateRelativeMicrostepsToMoveByAngle(float angle, An
     }
   }
 
-  int32_t relative_angle_microsteps = 0; // Always zero for other Motion Types: Stop And Reset, Pause and Resume.
+  int32_t relative_angle_microsteps = 0;
 
   switch (motion_type) {
     case MotionType::kAbsolute: {
@@ -135,6 +135,16 @@ uint32_t StepperDriver::CalculateRelativeMicrostepsToMoveByAngle(float angle, An
     case MotionType::kRelative: {
       // Microsteps required to move by given angular amount.
       relative_angle_microsteps = static_cast<int32_t>(angle_microsteps);
+      break;
+    }
+    case MotionType::kStopAndReset: {
+      [[fallthrough]];
+    }
+    case MotionType::kPause: {
+      [[fallthrough]];
+    }
+    case MotionType::kResume: {
+      // relative_angle_microsteps = 0 for Stop And Reset, Pause and Resume.
       break;
     }
   }
