@@ -308,13 +308,16 @@ void StepperDriver::MoveByJogging(MotionDirection direction) {
     jog_direction_ = direction;
 
     if (jog_direction_ == MotionDirection::kNegative) {
-      digitalWrite(dir_pin_, static_cast<uint8_t>(dir_pin_negative_direction_state_)); 
+      angular_position_updater_microsteps_ = -1;
+      digitalWrite(dir_pin_, static_cast<uint8_t>(dir_pin_negative_direction_state_));
+
     }
     else if (jog_direction_ == MotionDirection::kPositive) {
-      digitalWrite(dir_pin_, static_cast<uint8_t>(dir_pin_positive_direction_state_)); 
+      angular_position_updater_microsteps_ = 1;
+      digitalWrite(dir_pin_, static_cast<uint8_t>(dir_pin_positive_direction_state_));
     }
 
-    delayMicroseconds(dir_delay_us_); 
+    delayMicroseconds(dir_delay_us_);
   }
 
   if (jog_direction_ == MotionDirection::kNeutral) return;
