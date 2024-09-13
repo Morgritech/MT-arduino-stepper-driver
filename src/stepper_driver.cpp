@@ -124,7 +124,7 @@ uint32_t StepperDriver::CalculateRelativeMicrostepsToMoveByAngle(float angle, An
     }
   }
 
-  int32_t relative_angle_microsteps = 0; // Always zero for other Motion Types: Stop And Reset, Pause and Resume.
+  int32_t relative_angle_microsteps = 0;
 
   switch (motion_type) {
     case MotionType::kAbsolute: {
@@ -135,6 +135,16 @@ uint32_t StepperDriver::CalculateRelativeMicrostepsToMoveByAngle(float angle, An
     case MotionType::kRelative: {
       // Microsteps required to move by given angular amount.
       relative_angle_microsteps = static_cast<int32_t>(angle_microsteps);
+      break;
+    }
+    case MotionType::kStopAndReset: {
+      [[fallthrough]];
+    }
+    case MotionType::kPause: {
+      [[fallthrough]];
+    }
+    case MotionType::kResume: {
+      // relative_angle_microsteps = 0 for Stop And Reset, Pause and Resume.
       break;
     }
   }
@@ -308,13 +318,16 @@ void StepperDriver::MoveByJogging(MotionDirection direction) {
     jog_direction_ = direction;
 
     if (jog_direction_ == MotionDirection::kNegative) {
-      digitalWrite(dir_pin_, static_cast<uint8_t>(dir_pin_negative_direction_state_)); 
+      angular_position_updater_microsteps_ = -1;
+      digitalWrite(dir_pin_, static_cast<uint8_t>(dir_pin_negative_direction_state_));
+
     }
     else if (jog_direction_ == MotionDirection::kPositive) {
-      digitalWrite(dir_pin_, static_cast<uint8_t>(dir_pin_positive_direction_state_)); 
+      angular_position_updater_microsteps_ = 1;
+      digitalWrite(dir_pin_, static_cast<uint8_t>(dir_pin_positive_direction_state_));
     }
 
-    delayMicroseconds(dir_delay_us_); 
+    delayMicroseconds(dir_delay_us_);
   }
 
   if (jog_direction_ == MotionDirection::kNeutral) return;

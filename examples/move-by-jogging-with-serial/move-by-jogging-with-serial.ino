@@ -10,9 +10,9 @@
 
 /// @{
 /// @brief GPIO pins.
-const uint16_t kPulPin = 11; ///< For the stepper driver PUL/STP/CLK (pulse/step) interface.
-const uint16_t kDirPin = 12; ///< For the stepper driver DIR/CW (direction) interface.
-const uint16_t kEnaPin = 13; ///< For the stepper driver ENA/EN (enable) interface.
+const uint8_t kPulPin = 11; ///< For the stepper driver PUL/STP/CLK (pulse/step) interface.
+const uint8_t kDirPin = 12; ///< For the stepper driver DIR/CW (direction) interface.
+const uint8_t kEnaPin = 13; ///< For the stepper driver ENA/EN (enable) interface.
 /// @}
 
 /// @{
@@ -57,10 +57,6 @@ mt::StepperDriver stepper_driver(kPulPin, kDirPin, kEnaPin, kMicrostepMode, kFul
 void setup() {
   // Initialise the Serial Port.
   Serial.begin(kBaudRate);
-
-  // Initialise the input pins.
-  pinMode(kDirectionButtonPin, INPUT);
-  pinMode(kMoveButtonPin, INPUT);
 
   // Initialise the output pins.
   pinMode(kPulPin, OUTPUT);

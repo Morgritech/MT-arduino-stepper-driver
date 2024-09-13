@@ -10,9 +10,9 @@
 
 /// @{
 /// @brief GPIO pins.
-const uint16_t kPulPin = 11; ///< For the stepper driver PUL/STP/CLK (pulse/step) interface.
-const uint16_t kDirPin = 12; ///< For the stepper driver DIR/CW (direction) interface.
-const uint16_t kEnaPin = 13; ///< For the stepper driver ENA/EN (enable) interface.
+const uint8_t kPulPin = 11; ///< For the stepper driver PUL/STP/CLK (pulse/step) interface.
+const uint8_t kDirPin = 12; ///< For the stepper driver DIR/CW (direction) interface.
+const uint8_t kEnaPin = 13; ///< For the stepper driver ENA/EN (enable) interface.
 /// @}
 
 /// @brief Serial properties.
@@ -33,7 +33,7 @@ const float kPulDelay_us = 2.5F; ///< For the PUL pin.
 const float kDirDelay_us = 5.0F; ///< For the Dir pin.
 const float kEnaDelay_us = 5.0F; ///< For the Ena pin.
 /// Sweep angle during oscillation.
-const float kSweepAngle_degrees = 90.0F; // 90 degrees sweep angle.
+const float kSweepAngle_degrees = 180.0F; // 90 degrees sweep angle.
 /// Speed.
 const float kSpeed_RPM = 20.0; ///< Rotation speed (RPM).
 /// @}
@@ -84,13 +84,17 @@ void loop() {
   static float sweep_angle_degrees = kSweepAngle_degrees;
   // Variable to keep track of the motion status.
   static mt::StepperDriver::MotionStatus motion_status;
+  // Variable to specify the motion type.
+  static mt::StepperDriver::MotionType motion_type = mt::StepperDriver::MotionType::kRelative;
 
   // Move the motor.
-  motion_status = stepper_driver.MoveByAngle(sweep_angle_degrees, mt::StepperDriver::AngleUnits::kDegrees, mt::StepperDriver::MotionType::kRelative); // This must be called periodically.
+  motion_status = stepper_driver.MoveByAngle(sweep_angle_degrees, mt::StepperDriver::AngleUnits::kDegrees, motion_type); // This must be called periodically.
   
   if (motion_status == mt::StepperDriver::MotionStatus::kIdle) {
     // Motion has completed.
     // Change direction.
     sweep_angle_degrees = -1.0 * sweep_angle_degrees;
+    // OR Stop the motion.
+    //motion_type = mt::StepperDriver::MotionType::kStopAndReset; // Uncomment this section to stop the motion instead.
   }
 }

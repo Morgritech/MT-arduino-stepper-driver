@@ -10,9 +10,9 @@
 
 /// @{
 /// @brief GPIO pins.
-const uint16_t kPulPin = 11; ///< For the stepper driver PUL/STP/CLK (pulse/step) interface.
-const uint16_t kDirPin = 12; ///< For the stepper driver DIR/CW (direction) interface.
-const uint16_t kEnaPin = 13; ///< For the stepper driver ENA/EN (enable) interface.
+const uint8_t kPulPin = 11; ///< For the stepper driver PUL/STP/CLK (pulse/step) interface.
+const uint8_t kDirPin = 12; ///< For the stepper driver DIR/CW (direction) interface.
+const uint8_t kEnaPin = 13; ///< For the stepper driver ENA/EN (enable) interface.
 /// @}
 
 /// @brief Serial properties.
@@ -100,5 +100,7 @@ void loop() {
     // Motion has completed.
     // Change direction.
     sweep_angle_degrees = -1.0 * sweep_angle_degrees;
+    // OR Stop the motion.
+    //motion_type = mt::StepperDriver::MotionType::kStopAndReset; // Uncomment this section to stop the motion instead.    
   }
 }

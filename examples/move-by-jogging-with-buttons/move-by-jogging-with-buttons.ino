@@ -12,11 +12,11 @@
 
 /// @{
 /// @brief GPIO pins.
-const uint16_t kDirectionButtonPin = 2; ///< Direction button pin.
-const uint16_t kMoveButtonPin = 3; ///< Move button pin.
-const uint16_t kPulPin = 11; ///< For the stepper driver PUL/STP/CLK (pulse/step) interface.
-const uint16_t kDirPin = 12; ///< For the stepper driver DIR/CW (direction) interface.
-const uint16_t kEnaPin = 13; ///< For the stepper driver ENA/EN (enable) interface.
+const uint8_t kDirectionButtonPin = 2; ///< Direction button pin.
+const uint8_t kMoveButtonPin = 3; ///< Move button pin.
+const uint8_t kPulPin = 11; ///< For the stepper driver PUL/STP/CLK (pulse/step) interface.
+const uint8_t kDirPin = 12; ///< For the stepper driver DIR/CW (direction) interface.
+const uint8_t kEnaPin = 13; ///< For the stepper driver ENA/EN (enable) interface.
 /// @}
 
 /// @brief Serial properties.
@@ -31,7 +31,7 @@ const mt::MomentaryButton::PinState kMoveButtonUnpressedPinState = mt::Momentary
 const uint16_t kDirectionButtonDebouncePeriod_ms = 20;
 const uint16_t kMoveButtonDebouncePeriod_ms = 20;
 /// Button short press periods (ms).
-const uint16_t kDirectionButtonShortPressPeriod = 500;
+const uint16_t kDirectionButtonShortPressPeriod_ms = 500;
 /// @}
 
 /// @{
@@ -58,9 +58,9 @@ const uint16_t kStartupTime_ms = 1000; ///< Minimum startup/boot time in millise
 /// @}
 
 /// @brief The Momentary Button instance for the direction button.
-mt::MomentaryButton direction_button(kDirectionButtonPin, kDirectionButtonUnpressedPinState, kDirectionButtonDebouncePeriod, kDirectionButtonShortPressPeriod);
+mt::MomentaryButton direction_button(kDirectionButtonPin, kDirectionButtonUnpressedPinState, kDirectionButtonDebouncePeriod_ms, kDirectionButtonShortPressPeriod_ms);
 /// @brief The Momentary Button instance for the move button.
-mt::MomentaryButton move_button(kDirectionButtonPin, kDirectionButtonUnpressedPinState, kDirectionButtonDebouncePeriod);
+mt::MomentaryButton move_button(kMoveButtonPin, kMoveButtonUnpressedPinState, kMoveButtonDebouncePeriod_ms);
 
 /// @brief Stepper Driver instance for the stepper motor.
 mt::StepperDriver stepper_driver(kPulPin, kDirPin, kEnaPin, kMicrostepMode, kFullStepAngle_degrees, kGearRatio);
@@ -121,8 +121,8 @@ void loop() {
     Serial.println(F("Stop moving."));
   }
 
-  // Detect state change on the direction button pin.
-  mt::MomentaryButton::ButtonState direction_button_state = direction_button.DetectStateChange(); // This must be called periodically.
+  // Detect press type on the direction button pin.
+  mt::MomentaryButton::PressType direction_button_press_type = direction_button.DetectPressType(); // This must be called periodically.
 
   if (direction_button_press_type == mt::MomentaryButton::PressType::kShortPress) {
     if (motion_direction == mt::StepperDriver::MotionDirection::kPositive) {

@@ -1,0 +1,76 @@
+######################################################
+# Syntax Colouring Map For MT-arduino-momentary-button
+######################################################
+
+######################################################
+# Datatypes (KEYWORD1)
+######################################################
+
+StepperDriver	KEYWORD1
+AccelerationAlgorithm	KEYWORD1
+PinState	KEYWORD1
+PowerState	KEYWORD1
+SpeedUnits	KEYWORD1
+AccelerationUnits	KEYWORD1
+AngleUnits	KEYWORD1
+CalculationOption	KEYWORD1
+MotionType	KEYWORD1
+MotionStatus	KEYWORD1
+MotionDirection	KEYWORD1
+
+######################################################
+# Methods and Functions (KEYWORD2)
+######################################################
+
+SetSpeed	KEYWORD2
+SetAcceleration	KEYWORD2
+CalculateRelativeMicrostepsToMoveByAngle	KEYWORD2
+MoveByAngle	KEYWORD2
+MoveByJogging	KEYWORD2
+GetAngularPosition	KEYWORD2
+set_acceleration_algorithm	KEYWORD2
+set_ena_pin_enabled_state	KEYWORD2
+set_dir_pin_positive_direction_state	KEYWORD2
+set_pul_delay_us	KEYWORD2
+set_dir_delay_us	KEYWORD2
+set_ena_delay_us	KEYWORD2
+set_power_state	KEYWORD2
+power_state	KEYWORD2
+MoveByMicrostep	KEYWORD2
+MoveByMicrostepAtMicrostepPeriod	KEYWORD2
+CalculateMicrostepPeriodInFlux	KEYWORD2
+MoveByMicrostepAtMicrostepPeriodInFlux	KEYWORD2
+ResetAccelerationParameters	KEYWORD2
+DebugHelperForMoveByAngle	KEYWORD2
+
+######################################################
+# Constants (LITERAL1)
+######################################################
+
+kMicrostepsPerSecond	LITERAL1
+kDegreesPerSecond	LITERAL1
+kRadiansPerSecond	LITERAL1
+kRevolutionsPerMinute	LITERAL1
+kMicrostepsPerSecondPerSecond	LITERAL1
+kDegreesPerSecondPerSecond	LITERAL1
+kRadiansPerSecondPerSecond	LITERAL1
+kRevolutionsPerMinutePerMinute	LITERAL1
+kMicrosteps	LITERAL1
+kDegrees	LITERAL1
+kRadians	LITERAL1
+kRevolutions	LITERAL1
+kCalculateOnly	LITERAL1
+kSetupMotion	LITERAL1
+kStopAndReset	LITERAL1
+kPause	LITERAL1
+kResume	LITERAL1
+kAbsolute	LITERAL1
+kRelative	LITERAL1
+kIdle	LITERAL1
+kPaused	LITERAL1
+kAccelerate	LITERAL1
+kConstantSpeed	LITERAL1
+kDecelerate	LITERAL1
+kNegative	LITERAL1
+kNeutral	LITERAL1
+kPositive	LITERAL1
