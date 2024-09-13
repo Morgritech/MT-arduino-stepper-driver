@@ -84,13 +84,17 @@ void loop() {
   static float sweep_angle_degrees = kSweepAngle_degrees;
   // Variable to keep track of the motion status.
   static mt::StepperDriver::MotionStatus motion_status;
+  // Variable to specify the motion type.
+  static mt::StepperDriver::MotionType motion_type = mt::StepperDriver::MotionType::kRelative;
 
   // Move the motor.
-  motion_status = stepper_driver.MoveByAngle(sweep_angle_degrees, mt::StepperDriver::AngleUnits::kDegrees, mt::StepperDriver::MotionType::kRelative); // This must be called periodically.
+  motion_status = stepper_driver.MoveByAngle(sweep_angle_degrees, mt::StepperDriver::AngleUnits::kDegrees, motion_type); // This must be called periodically.
   
   if (motion_status == mt::StepperDriver::MotionStatus::kIdle) {
     // Motion has completed.
     // Change direction.
     sweep_angle_degrees = -1.0 * sweep_angle_degrees;
+    // OR Stop the motion.
+    //motion_type = mt::StepperDriver::MotionType::kStopAndReset; // Uncomment this section to stop the motion instead.
   }
 }

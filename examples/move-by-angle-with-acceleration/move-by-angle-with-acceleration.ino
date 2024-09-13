@@ -100,5 +100,7 @@ void loop() {
     // Motion has completed.
     // Change direction.
     sweep_angle_degrees = -1.0 * sweep_angle_degrees;
+    // OR Stop the motion.
+    //motion_type = mt::StepperDriver::MotionType::kStopAndReset; // Uncomment this section to stop the motion instead.    
   }
 }
