@@ -64,8 +64,11 @@ void StepperDriver::SetSpeed(float speed, SpeedUnits speed_units) {
 
   if (motion_status_ != MotionStatus::kIdle && motion_status_ != MotionStatus::kPaused) {
     // Speed changed mid-motion.
-    angle_after_acceleration_microsteps_ = 0; // Indicates speed profile should be recalculated.
-    motion_status_ = MotionStatus::kAccelerate;
+    motion_status_ = MotionStatus::kPaused;
+  }
+
+  if (debug_enabled_ == true) {
+    ResetDebugHelperForMoveByAngle();
   }
 }
 
@@ -91,12 +94,16 @@ void StepperDriver::SetAcceleration(float acceleration, AccelerationUnits accele
     }
   }
 
-  if (acceleration_algorithm_ == AccelerationAlgorithm::kEiderman04) R_ = acceleration_microsteps_per_s_per_s_ / fsquared_; // Eiderman '04, Equation 19.
+  // Calculate vi1_, Cn0_, R_, p1_
+  CalculateInitialMicrostepPeriodInFlux();
 
   if (motion_status_ != MotionStatus::kIdle && motion_status_ != MotionStatus::kPaused) {
     // Acceleration changed mid-motion.
-    angle_after_acceleration_microsteps_ = 0; // Indicates speed profile should be recalculated.
-    motion_status_ = MotionStatus::kAccelerate;
+    motion_status_ = MotionStatus::kPaused;
+  }
+
+  if (debug_enabled_ == true) {
+    ResetDebugHelperForMoveByAngle();
   }
 }
 
@@ -175,8 +182,6 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
  
   switch (motion_type) {
     case MotionType::kStopAndReset: {
-      // Reset relative_angle_to_move_microsteps_, relative_angle_to_move_in_flux_microsteps_, angle_after_acceleration_microsteps_, n_, i_.
-      ResetAccelerationParameters();
       motion_status_ = MotionStatus::kIdle;
       break;
     }
@@ -192,16 +197,16 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
     }
     case MotionType::kRelative: {
       if (motion_status_ == MotionStatus::kIdle || motion_status_ == MotionStatus::kPaused) {
-        angle_after_acceleration_microsteps_ = 0; // Indicates speed profile should be recalculated.
-
-        if (motion_status_ == MotionStatus::kIdle) {
-          // Reset relative_angle_to_move_microsteps_, relative_angle_to_move_in_flux_microsteps_, angle_after_acceleration_microsteps_, n_, i_.
-          ResetAccelerationParameters();
+        if (motion_status_ == MotionStatus::kPaused) {
+          relative_angle_to_move_microsteps_ = relative_angle_to_move_in_flux_microsteps_;
+        }
+        else if (motion_status_ == MotionStatus::kIdle) {
           relative_angle_to_move_microsteps_ = CalculateRelativeMicrostepsToMoveByAngle(angle, angle_units, motion_type,
                                                                                 CalculationOption::kSetupMotion);
           relative_angle_to_move_in_flux_microsteps_ = relative_angle_to_move_microsteps_;                                                                                
         }
 
+        ResetAccelerationParameters(); // Reset angle_after_acceleration_microsteps_, n_, i_.
         motion_status_ = MotionStatus::kAccelerate;
       }
 
@@ -299,7 +304,7 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
       }
       else {
         // Decelerate.
-        MoveByMicrostepAtMicrostepPeriodInFlux();       
+        MoveByMicrostepAtMicrostepPeriodInFlux();
       }
 
       break;
@@ -361,10 +366,40 @@ float StepperDriver::GetAngularPosition(AngleUnits angle_units) const {
 }
 
 void StepperDriver::set_acceleration_algorithm(AccelerationAlgorithm acceleration_algorithm) {
+  if (acceleration_algorithm == AccelerationAlgorithm::kEiderman04) R_ = acceleration_microsteps_per_s_per_s_ / fsquared_; // Eiderman '04, Equation 19.
+
+  if (motion_status_ != MotionStatus::kIdle && motion_status_ != MotionStatus::kPaused) {
+    // Algorithm changed mid-motion. Synchronise all algorithms.
+    switch(acceleration_algorithm_) {
+      case AccelerationAlgorithm::kMorgridge24: {
+        m_ = K_ * R_;
+        Cn_ = Ti_us_;
+        p_ = Ti_us_;
+        n_ = i_ - 1;
+        break;
+      }
+      case AccelerationAlgorithm::kAustin05: {
+        m_ = K_ * R_;
+        Ti_us_ = Cn_;
+        vi_microsteps_per_s_ = (Ti_us_ == 0 ? 0 : 1000000.0 / Ti_us_);
+        p_ = Cn_;
+        i_ = n_ + 1;
+        break;
+      }
+      case AccelerationAlgorithm::kEiderman04: {
+        K_ = (m_ == 0 ? m_ : m_ / fabs(m_));
+        Ti_us_ = p_;
+        vi_microsteps_per_s_ = (Ti_us_ == 0 ? 0 : 1000000.0 / Ti_us_);
+        Cn_ = p_;
+        n_ = i_ - 1;
+        break;
+      }
+    }
+  }
+
+  // Set new algorithm.
   acceleration_algorithm_ = acceleration_algorithm;
-  if (acceleration_algorithm_ == AccelerationAlgorithm::kEiderman04) R_ = acceleration_microsteps_per_s_per_s_ / fsquared_; // Eiderman '04, Equation 19.
-  // Reset relative_angle_to_move_microsteps_, relative_angle_to_move_in_flux_microsteps_, angle_after_acceleration_microsteps_, n_, i_.
-  ResetAccelerationParameters();
+  CalculateInitialMicrostepPeriodInFlux();
 }
 
 void StepperDriver::set_ena_pin_enabled_state(PinState ena_pin_enabled_state) {
@@ -435,6 +470,27 @@ void StepperDriver::MoveByMicrostepAtMicrostepPeriod() {
   }
 }
 
+void StepperDriver::CalculateInitialMicrostepPeriodInFlux() {
+  switch (acceleration_algorithm_) {
+    case AccelerationAlgorithm::kMorgridge24: {
+      // Calculate the min speed for i = 1.
+      vi1_ = acceleration_microsteps_per_s_per_s_ * sqrt(2.0 / acceleration_microsteps_per_s_per_s_); // Morgridge '24, Equation 30.
+      break;
+    }
+    case AccelerationAlgorithm::kAustin05: {
+      // Calculate the max microstep (min speed) period for n = 0.
+      Cn0_ = 0.676 * f_ * sqrt(2.0 / acceleration_microsteps_per_s_per_s_); // Austin '05, Equation 15.
+      break;
+    }
+    case AccelerationAlgorithm::kEiderman04: {
+      // Calculate the max microstep period (min speed) for i = 1.
+      R_ = acceleration_microsteps_per_s_per_s_ / fsquared_; // Eiderman '04, Equation 19.      
+      p1_ = f_ / sqrt((v0_ * v0_) + (2.0 * acceleration_microsteps_per_s_per_s_)); // Eiderman '04, Equation 17.
+      break;
+    }
+  }  
+}
+
 void StepperDriver::CalculateMicrostepPeriodInFlux() {
   switch (acceleration_algorithm_) {
     case AccelerationAlgorithm::kMorgridge24: {
@@ -442,6 +498,7 @@ void StepperDriver::CalculateMicrostepPeriodInFlux() {
       if (K_ == 0) {
         // Constant speed.
         if (microstep_period_in_flux_us_ != microstep_period_us_) { // Only execute once if needed, so as not to waste resources.
+          // vi_microsteps_per_s_ is clamped to the set max speed after accelerating/during constant speed.
           vi_microsteps_per_s_ = speed_microsteps_per_s_;
           Ti_us_ = microstep_period_us_;
           microstep_period_in_flux_us_ = microstep_period_us_;
@@ -450,12 +507,13 @@ void StepperDriver::CalculateMicrostepPeriodInFlux() {
       else {
         // Acceleration/deceleration.
         if(i_ == 1) {
-          // From stand-still. Calculate the speed/microstep period for i = 1.
-          vi_microsteps_per_s_ = acceleration_microsteps_per_s_per_s_ * sqrt(2.0 / acceleration_microsteps_per_s_per_s_); // Morgridge '24, Equation 30.
+          // From stand-still. Set the min speed for i = 1.
+          vi_microsteps_per_s_ = vi1_;
         }
         else {
           // Already accelerating/decelerating.
-          vi_microsteps_per_s_ = vi_microsteps_per_s_ + (K_ * (acceleration_microsteps_per_s_per_s_ / vi_microsteps_per_s_)); // Morgridge '24, Equation 31.
+          // vi_microsteps_per_s_ is clamped to the calculated min speed when decelerating.
+          vi_microsteps_per_s_ = (vi_microsteps_per_s_ < vi1_ ? vi1_ : vi_microsteps_per_s_ + (K_ * (acceleration_microsteps_per_s_per_s_ / vi_microsteps_per_s_))); // Morgridge '24, Equation 31.
         }
 
         Ti_us_ = 1000000.0 / vi_microsteps_per_s_; // Morgridge '24, Equation 32.
@@ -471,18 +529,20 @@ void StepperDriver::CalculateMicrostepPeriodInFlux() {
       if (K_ == 0) {
         // Constant speed.
         if (microstep_period_in_flux_us_ != microstep_period_us_) { // Only execute once if needed, so as not to waste resources.
+          // Cn_ is clamped to the set min microstep period (max speed) after accelerating/during constant speed.
           Cn_ = microstep_period_us_;
           microstep_period_in_flux_us_ = microstep_period_us_;
         }    
       }
       else {
         if(n_ == 0) {
-          // From stand-still. Calculate the speed/microstep period for n = 0.
-          Cn_ = 0.676 * f_ * sqrt(2.0 / acceleration_microsteps_per_s_per_s_); // Austin '05, Equation 15.
+          // From stand-still. Set the max microstep (min speed) period for n = 0.
+          Cn_ = Cn0_;
         }
         else {
           // Already accelerating/decelerating. n > 0 for acceleration, n < 0 for deceleration.
-          Cn_ = Cn_ - ((2.0 * Cn_) / ((4.0 * n_) + 1)); // Austin '05, Equation 13.
+          // Cn_ is clamped to the calculated max microstep period (min speed) when decelerating.
+          Cn_ = (Cn_ > Cn0_ ? Cn0_ : Cn_ - ((2.0 * Cn_) / ((4.0 * n_) + 1))); // Austin '05, Equation 13.
         }
 
         microstep_period_in_flux_us_ = Cn_;
@@ -496,21 +556,23 @@ void StepperDriver::CalculateMicrostepPeriodInFlux() {
       if (m_ == 0) {
         // Constant speed.
         if (microstep_period_in_flux_us_ != microstep_period_us_) { // Only execute once if needed, so as not to waste resources.
+          // p_ clamped to the set min microstep period (max speed) after accelerating/during constant speed.
           p_ = microstep_period_us_;
           microstep_period_in_flux_us_ = microstep_period_us_;
         }    
       }
       else {
         if(i_ == 1) {
-          // From stand-still. Calculate the speed/microstep period for i = 1.
-          p_ = f_ / sqrt((v0_ * v0_) + (2.0 * acceleration_microsteps_per_s_per_s_)); // Eiderman '04, Equation 17.
+          // From stand-still. Calculate the max microstep period (min speed) for i = 1.
+          p_ = p1_;
         }
         else {
           // Already accelerating/decelerating.
+          // p_ is clamped to the calculated max microstep period (min speed) when decelerating.
           q_ = m_ * p_ * p_;
-          p_ = p_ * (1 + q_); // Eiderman '04, Equation 20.
-          //p_ = p_ * (1 + q_ + (q_ * q_)); // Eiderman '04, Equation 23.
-          //p_ = p_ * (1 + q_ + (1.5 * q_ * q_)); // Eiderman '04, Equation 22.
+          p_ = (p_ > p1_ ? p1_ : p_ * (1 + q_)); // Eiderman '04, Equation 20.
+          //p_ = (p_ > p1_ ? p1_ : p_ * (1 + q_ + (q_ * q_))); // Eiderman '04, Equation 23.
+          //p_ = (p_ > p1_ ? p1_ : p_ * (1 + q_ + (1.5 * q_ * q_))); // Eiderman '04, Equation 22.
         }
 
         microstep_period_in_flux_us_ = p_;
@@ -532,15 +594,13 @@ void StepperDriver::MoveByMicrostepAtMicrostepPeriodInFlux() {
 }
 
 void StepperDriver::ResetAccelerationParameters() {
-  relative_angle_to_move_microsteps_ = 0;
-  relative_angle_to_move_in_flux_microsteps_ = 0;
   angle_after_acceleration_microsteps_ = 0; // Indicates speed profile should be recalculated.
   n_ = 0;
-  i_ = 1; 
+  i_ = 1;  
 }
 
 void StepperDriver::DebugHelperForMoveByAngle() {
-#if 0 // 0 to disable debug outputs, 1 to enable debug ouputs.
+#if 0 // 0 to disable debug outputs, 1 to enable debug outputs. // Remember to also set debug_enabled_ to true in the header (.h) file.
   if (motion_status_ == MotionStatus::kAccelerate) {
     if (debug_helper_accel_initial_vars_printed_ == false) {
       Serial.print(F("Set microstep period (us): ")); Serial.println(microstep_period_us_);
@@ -549,7 +609,7 @@ void StepperDriver::DebugHelperForMoveByAngle() {
       Serial.print(F("Total relative angle (microsteps) to move: ")); Serial.println(relative_angle_to_move_microsteps_);
 
       if (acceleration_microsteps_per_s_per_s_ == 0) {
-        Serial.print(F("___Constant speed only___"));
+        Serial.println(F("___Constant speed only___"));
       }
       else if (angle_after_constant_speed_microsteps_ == 0) {
         Serial.println(F("___Triangular speed profile___ :"));
@@ -577,8 +637,8 @@ void StepperDriver::DebugHelperForMoveByAngle() {
   }
   else if (motion_status_ == MotionStatus::kDecelerate) {
     // Triangular or trapezoidal speed profiles.
-    if (debug_helper_cspeed_initial_vars_printed_ == false) {
-      Serial.print(F("Starting deceleration."));
+    if (debug_helper_decel_initial_vars_printed_ == false) {
+      Serial.println(F("Starting deceleration."));
 
       if (acceleration_microsteps_per_s_per_s_ != 0 && angle_after_constant_speed_microsteps_ == 0) {
         // Triangular speed profile.
@@ -589,27 +649,33 @@ void StepperDriver::DebugHelperForMoveByAngle() {
     }
   }
 
-    // Print acceleration/deceleration values.
-    if (angle_after_acceleration_microsteps_ != 0 && K_ != 0) {
-      switch (acceleration_algorithm_) {
-        case AccelerationAlgorithm::kMorgridge24: {
-          //Serial.print(F("v")); Serial.print(i_); Serial.print(F(" = ")); Serial.println(vi_microsteps_per_s_);
-          //Serial.print(F("T")); Serial.print(i_); Serial.print(F(" = ")); Serial.println(Ti_us_);
-          break;
-        }
-        case AccelerationAlgorithm::kAustin05: {
-          //Serial.print(F("C")); Serial.print(n_); Serial.print(F(" = ")); Serial.println(Cn_);
-          break;
-        }
-        case AccelerationAlgorithm::kEiderman04: {
-          //Serial.print(F("p")); Serial.print(i_); Serial.print(F(" = ")); Serial.println(p_);
-          break;
-        }
+  // Print acceleration/deceleration values.
+  if (angle_after_acceleration_microsteps_ != 0 && K_ != 0) {
+    switch (acceleration_algorithm_) {
+      case AccelerationAlgorithm::kMorgridge24: {
+        //Serial.print(F("v")); Serial.print(i_); Serial.print(F(" = ")); Serial.println(vi_microsteps_per_s_);
+        //Serial.print(F("T")); Serial.print(i_); Serial.print(F(" = ")); Serial.println(Ti_us_);
+        break;
       }
-
-      //Serial.print(F("microstep_period_in_flux_us_")); Serial.print(n_); Serial.print(F(" = ")); Serial.println(microstep_period_in_flux_us_);
+      case AccelerationAlgorithm::kAustin05: {
+        //Serial.print(F("C")); Serial.print(n_); Serial.print(F(" = ")); Serial.println(Cn_);
+        break;
+      }
+      case AccelerationAlgorithm::kEiderman04: {
+        //Serial.print(F("p")); Serial.print(i_); Serial.print(F(" = ")); Serial.println(p_);
+        break;
+      }
     }
-#endif    
+
+    //Serial.print(F("microstep_period_in_flux_us_")); Serial.print(n_); Serial.print(F(" = ")); Serial.println(microstep_period_in_flux_us_);
+  }
+#endif
+}
+
+void StepperDriver::ResetDebugHelperForMoveByAngle() {
+  debug_helper_accel_initial_vars_printed_ = false;
+  debug_helper_cspeed_initial_vars_printed_ = false;
+  debug_helper_decel_initial_vars_printed_ = false;
 }
 
 } // namespace mt

@@ -16,7 +16,11 @@ The following features are available:
 - The angular position can be retrieved, which can be used externally to keep track of the deviation from a start/"soft home"/zero position.
 - Acceleration. Acceleration can be set in various units, including; microsteps per second squared, degrees per second squared, radians per second squared, and, revolutions per minute squared.
 - User selectable acceleration algorithms. Choose from 3 different algorithms; Austin D. 2005, Eiderman A. 2004 and an in-house algorithm developed by Morgridge J. 2024 during the creation of this library.
-- The library allows changes in speed and acceleration during motion, however, this may negatively impact the motion especially on relatively slow microcontrollers.
+
+Things to note:
+
+- When using a "move by angle" command with acceleration/deceleration (i.e., acceleration is non-zero), if the speed or acceleration is changed during motion (i.e., before the move command is completed), the current behaviour of the library is to pause the motion abruptly and resume the motion with a new acceleration. This happens relatively quickly and may not be noticeable for most applications depending on the set speed and acceleration.
+- When using a "move by jogging" command, only constant speed motion is used (i.e., acceleration/deceleration is ignored). This is because the library cannot know when the user will issue a change of direction or stop instruction, and therefore cannot calculate the appropriate speed profile.
 
 A [report](extras/dsdr1001%20Stepper%20Motor%20Control%20Equations%20Issue%2001%2012-09-2024.pdf) showing the equations and algorithms used in the library can be found in the "extras" folder.
 
