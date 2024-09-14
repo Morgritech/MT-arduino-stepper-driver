@@ -184,14 +184,17 @@ class StepperDriver {
   /// @brief Move the motor by the minimum step based on the micro-stepping mode, at speed based on the set microstep period (us).
   void MoveByMicrostepAtMicrostepPeriod();
 
+  /// @brief Calculate the initial ramp speed based on the microstep period in flux (us), during an acceleration/deceleration.
+  void CalculateInitialMicrostepPeriodInFlux();
+
   /// @brief Calculate the ramp speed based on the microstep period in flux (us), during an acceleration/deceleration.
   void CalculateMicrostepPeriodInFlux();
 
   /// @brief Move the motor by the minimum step based on the micro-stepping mode, at the speed based on the microstep period (us), that is changing due to acceleration/deceleration.
   void MoveByMicrostepAtMicrostepPeriodInFlux();
 
-  /// @brief Reset parameters used for acceleration/deceleration.
-  void ResetAccelerationParameters();
+  /// @brief Reset parameters used for acceleration/deceleration to prep for idle start.
+  void ResetAccelerationParametersForIdleStart();
 
   /// @brief Helper for printing out debugging information.
   void DebugHelperForMoveByAngle();
@@ -252,11 +255,14 @@ class StepperDriver {
   float speed_microsteps_per_s_ = 0.0; ///< Target speed (microsteps/s).
   //float speed_achievable_microsteps_per_s_ = 0.0; ///< Achievable speed based on the set acceleration and travel distance/angle (microsteps/s).
   uint32_t microstep_period_us_ = 100000.0; ///< Target speed based on the microstep period (us) between microsteps.
+  float vi1_ = 0.0; ///< The minimum speed (microsteps/s) (i = 1) for a given acceleration. Morgridge '24.
   float vi_microsteps_per_s_ = 0.0; ///< ith speed (microsteps/s), used to calculate Ti_us_. Morgridge '24.
   float Ti_us_ = 0.0; ///< ith microstep period (us), used to set the microstep_period_in_flux_us. Morgridge '24.
   float f_ = 1000000.0; ///< Timer frequency (count of timer ticks per sec) (Hz). Austin '05/Eiderman '04.
   double fsquared_ = f_ * f_; ///< Eiderman '04.
+  float Cn0_ = 0.0; ///< The maximum microstep period (us) (i.e. minimum speed) (i = 0) for a given acceleration. Austin '05.
   float Cn_ = 0.0; ///< nth speed (us), used to set microstep_period_in_flux_us. Austin '05.
+  float p1_ = 0.0; ///< The maximum microstep period (us) (i.e. minimum speed) (i = 1) for a given acceleration. Eiderman '04.
   float p_ = 0.0; ///< ith speed (us), used to set microstep_period_in_flux_us. Eiderman '04.
   float v0_ = 0.0; ///< Base speed (microsteps/s) used to calculate the initial value of p. Eiderman '04.
   uint32_t microstep_period_in_flux_us_ = 0.0; ///< The microstep period (us) that is changing due to acceleration/deceleration.
@@ -265,7 +271,7 @@ class StepperDriver {
   float acceleration_microsteps_per_s_per_s_ = 0.0; ///< Target acceleration (microsteps/s^2).
   uint64_t reference_microstep_flux_time_us_ = 0; ///< Reference time (us) for the microstep period in flux.
   // Motion phase constants.
-  int8_t K_ = 0; ///< Constant multiplier. (+1 for acceleration, 0 in-between, -1 for deceleration). Morgridge '24.
+  int8_t K_ = 1; ///< Constant multiplier. (+1 for acceleration, 0 in-between, -1 for deceleration). Morgridge '24.
   float R_ = 0.0; ///< Constant multiplier. Eiderman '04.
   float m_ = 0.0; ///< Variable multiplier that depends on movement phase (m_ = -R_ for acceleration, 0 in-between, R_ for deceleration). Eiderman '04.
   /// Other.
@@ -275,7 +281,8 @@ class StepperDriver {
   float q_ = 0.0; ///< Variable to calculate a more accurate value of p at the expense of processing overhead (i.e., slower). Eiderman '04.
   int32_t n_ = 0; ///< Iteration counter. Also depends on movement phase (n > 0 for acceleration, n < 0 for deceleration). Austin '05.
   /// Debug helpers.
-  bool debug_enabled_ = false; ///< Flag to control whether debug outputs are printed.
+  bool debug_enabled_ = false; ///< Flag to control whether debug outputs are printed. Remember to also set #if to 0 in DebugHelperForMoveByAngle() in the source (.cpp) file.
+  //bool debug_enabled_ = true; ///< Flag to control whether debug outputs are printed. Remember to also set #if to 1 as described above.
   bool debug_helper_accel_initial_vars_printed_ = false; ///< Flag to aid in printing initial debug outputs during acceleration only once.
   bool debug_helper_cspeed_initial_vars_printed_ = false; ///< Flag to aid in printing initial debug outputs during constant speed only once.
   bool debug_helper_decel_initial_vars_printed_ = false; ///< Flag to aid in printing initial debug outputs during deceleration speed only once.
