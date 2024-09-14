@@ -64,8 +64,11 @@ void StepperDriver::SetSpeed(float speed, SpeedUnits speed_units) {
 
   if (motion_status_ != MotionStatus::kIdle && motion_status_ != MotionStatus::kPaused) {
     // Speed changed mid-motion.
-    angle_after_acceleration_microsteps_ = 0; // Indicates speed profile should be recalculated.
-    motion_status_ = MotionStatus::kAccelerate;
+    motion_status_ = MotionStatus::kPaused;
+  }
+
+  if (debug_enabled_ == true) {
+    ResetDebugHelperForMoveByAngle();
   }
 }
 
@@ -96,8 +99,11 @@ void StepperDriver::SetAcceleration(float acceleration, AccelerationUnits accele
 
   if (motion_status_ != MotionStatus::kIdle && motion_status_ != MotionStatus::kPaused) {
     // Acceleration changed mid-motion.
-    angle_after_acceleration_microsteps_ = 0; // Indicates speed profile should be recalculated.
-    motion_status_ = MotionStatus::kAccelerate;
+    motion_status_ = MotionStatus::kPaused;
+  }
+
+  if (debug_enabled_ == true) {
+    ResetDebugHelperForMoveByAngle();
   }
 }
 
@@ -176,8 +182,6 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
  
   switch (motion_type) {
     case MotionType::kStopAndReset: {
-      // Reset relative_angle_to_move_microsteps_, relative_angle_to_move_in_flux_microsteps_, angle_after_acceleration_microsteps_, n_, i_.
-      ResetAccelerationParametersForIdleStart();
       motion_status_ = MotionStatus::kIdle;
       break;
     }
@@ -193,16 +197,16 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
     }
     case MotionType::kRelative: {
       if (motion_status_ == MotionStatus::kIdle || motion_status_ == MotionStatus::kPaused) {
-        angle_after_acceleration_microsteps_ = 0; // Indicates speed profile should be recalculated.
-
-        if (motion_status_ == MotionStatus::kIdle) {
-          // Reset relative_angle_to_move_microsteps_, relative_angle_to_move_in_flux_microsteps_, angle_after_acceleration_microsteps_, n_, i_.
-          ResetAccelerationParametersForIdleStart();
+        if (motion_status_ == MotionStatus::kPaused) {
+          relative_angle_to_move_microsteps_ = relative_angle_to_move_in_flux_microsteps_;
+        }
+        else if (motion_status_ == MotionStatus::kIdle) {
           relative_angle_to_move_microsteps_ = CalculateRelativeMicrostepsToMoveByAngle(angle, angle_units, motion_type,
                                                                                 CalculationOption::kSetupMotion);
           relative_angle_to_move_in_flux_microsteps_ = relative_angle_to_move_microsteps_;                                                                                
         }
 
+        ResetAccelerationParameters(); // Reset angle_after_acceleration_microsteps_, n_, i_.
         motion_status_ = MotionStatus::kAccelerate;
       }
 
@@ -301,7 +305,6 @@ StepperDriver::MotionStatus StepperDriver::MoveByAngle(float angle, AngleUnits a
       else {
         // Decelerate.
         MoveByMicrostepAtMicrostepPeriodInFlux();
-        //Serial.print(F("relative_angle_to_move_in_flux_microsteps_ = ")); Serial.println(relative_angle_to_move_in_flux_microsteps_);
       }
 
       break;
@@ -378,15 +381,15 @@ void StepperDriver::set_acceleration_algorithm(AccelerationAlgorithm acceleratio
       case AccelerationAlgorithm::kAustin05: {
         m_ = K_ * R_;
         Ti_us_ = Cn_;
-        vi_microsteps_per_s_ = (Ti_us_ == 0.0 ? 0.0 : 1000000.0 / Ti_us_);
+        vi_microsteps_per_s_ = (Ti_us_ == 0 ? 0 : 1000000.0 / Ti_us_);
         p_ = Cn_;
         i_ = n_ + 1;
         break;
       }
       case AccelerationAlgorithm::kEiderman04: {
-        K_ = (m_ == 0.0 ? m_ : m_ / fabs(m_));
+        K_ = (m_ == 0 ? m_ : m_ / fabs(m_));
         Ti_us_ = p_;
-        vi_microsteps_per_s_ = (Ti_us_ == 0.0 ? 0.0 : 1000000.0 / Ti_us_);
+        vi_microsteps_per_s_ = (Ti_us_ == 0 ? 0 : 1000000.0 / Ti_us_);
         Cn_ = p_;
         n_ = i_ - 1;
         break;
@@ -590,16 +593,14 @@ void StepperDriver::MoveByMicrostepAtMicrostepPeriodInFlux() {
   }
 }
 
-void StepperDriver::ResetAccelerationParametersForIdleStart() {
-  relative_angle_to_move_microsteps_ = 0;
-  relative_angle_to_move_in_flux_microsteps_ = 0;
+void StepperDriver::ResetAccelerationParameters() {
   angle_after_acceleration_microsteps_ = 0; // Indicates speed profile should be recalculated.
   n_ = 0;
   i_ = 1;  
 }
 
 void StepperDriver::DebugHelperForMoveByAngle() {
-#if 1 // 0 to disable debug outputs, 1 to enable debug outputs. // Remember to also set debug_enabled_ to true in the header (.h) file.
+#if 0 // 0 to disable debug outputs, 1 to enable debug outputs. // Remember to also set debug_enabled_ to true in the header (.h) file.
   if (motion_status_ == MotionStatus::kAccelerate) {
     if (debug_helper_accel_initial_vars_printed_ == false) {
       Serial.print(F("Set microstep period (us): ")); Serial.println(microstep_period_us_);
@@ -608,7 +609,7 @@ void StepperDriver::DebugHelperForMoveByAngle() {
       Serial.print(F("Total relative angle (microsteps) to move: ")); Serial.println(relative_angle_to_move_microsteps_);
 
       if (acceleration_microsteps_per_s_per_s_ == 0) {
-        Serial.print(F("___Constant speed only___"));
+        Serial.println(F("___Constant speed only___"));
       }
       else if (angle_after_constant_speed_microsteps_ == 0) {
         Serial.println(F("___Triangular speed profile___ :"));
@@ -636,8 +637,8 @@ void StepperDriver::DebugHelperForMoveByAngle() {
   }
   else if (motion_status_ == MotionStatus::kDecelerate) {
     // Triangular or trapezoidal speed profiles.
-    if (debug_helper_cspeed_initial_vars_printed_ == false) {
-      Serial.print(F("Starting deceleration."));
+    if (debug_helper_decel_initial_vars_printed_ == false) {
+      Serial.println(F("Starting deceleration."));
 
       if (acceleration_microsteps_per_s_per_s_ != 0 && angle_after_constant_speed_microsteps_ == 0) {
         // Triangular speed profile.
@@ -648,27 +649,33 @@ void StepperDriver::DebugHelperForMoveByAngle() {
     }
   }
 
-    // Print acceleration/deceleration values.
-    if (angle_after_acceleration_microsteps_ != 0 && K_ != 0) {
-      switch (acceleration_algorithm_) {
-        case AccelerationAlgorithm::kMorgridge24: {
-          //Serial.print(F("v")); Serial.print(i_); Serial.print(F(" = ")); Serial.println(vi_microsteps_per_s_);
-          //Serial.print(F("T")); Serial.print(i_); Serial.print(F(" = ")); Serial.println(Ti_us_);
-          break;
-        }
-        case AccelerationAlgorithm::kAustin05: {
-          //Serial.print(F("C")); Serial.print(n_); Serial.print(F(" = ")); Serial.println(Cn_);
-          break;
-        }
-        case AccelerationAlgorithm::kEiderman04: {
-          //Serial.print(F("p")); Serial.print(i_); Serial.print(F(" = ")); Serial.println(p_);
-          break;
-        }
+  // Print acceleration/deceleration values.
+  if (angle_after_acceleration_microsteps_ != 0 && K_ != 0) {
+    switch (acceleration_algorithm_) {
+      case AccelerationAlgorithm::kMorgridge24: {
+        //Serial.print(F("v")); Serial.print(i_); Serial.print(F(" = ")); Serial.println(vi_microsteps_per_s_);
+        //Serial.print(F("T")); Serial.print(i_); Serial.print(F(" = ")); Serial.println(Ti_us_);
+        break;
       }
-
-      //Serial.print(F("microstep_period_in_flux_us_")); Serial.print(n_); Serial.print(F(" = ")); Serial.println(microstep_period_in_flux_us_);
+      case AccelerationAlgorithm::kAustin05: {
+        //Serial.print(F("C")); Serial.print(n_); Serial.print(F(" = ")); Serial.println(Cn_);
+        break;
+      }
+      case AccelerationAlgorithm::kEiderman04: {
+        //Serial.print(F("p")); Serial.print(i_); Serial.print(F(" = ")); Serial.println(p_);
+        break;
+      }
     }
-#endif    
+
+    //Serial.print(F("microstep_period_in_flux_us_")); Serial.print(n_); Serial.print(F(" = ")); Serial.println(microstep_period_in_flux_us_);
+  }
+#endif
+}
+
+void StepperDriver::ResetDebugHelperForMoveByAngle() {
+  debug_helper_accel_initial_vars_printed_ = false;
+  debug_helper_cspeed_initial_vars_printed_ = false;
+  debug_helper_decel_initial_vars_printed_ = false;
 }
 
 } // namespace mt

@@ -193,11 +193,14 @@ class StepperDriver {
   /// @brief Move the motor by the minimum step based on the micro-stepping mode, at the speed based on the microstep period (us), that is changing due to acceleration/deceleration.
   void MoveByMicrostepAtMicrostepPeriodInFlux();
 
-  /// @brief Reset parameters used for acceleration/deceleration to prep for idle start.
-  void ResetAccelerationParametersForIdleStart();
+  /// @brief Reset parameters used for acceleration/deceleration to prepare to start from idle, or resume from pause.
+  void ResetAccelerationParameters();
 
   /// @brief Helper for printing out debugging information.
   void DebugHelperForMoveByAngle();
+
+  /// @brief Reset the debug helper.
+  void ResetDebugHelperForMoveByAngle();
 
   /// @{
   /// @brief Pre-calculated unit conversion constants.
