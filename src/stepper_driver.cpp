@@ -467,8 +467,7 @@ void StepperDriver::MoveByMicrostep() {
 }
 
 void StepperDriver::MoveByMicrostepAtMicrostepPeriod() {
-  uint64_t current_time_us = micros();
-  if ((current_time_us - reference_microstep_time_us_) >= microstep_period_us_) {
+  if (uint64_t current_time_us = micros(); (current_time_us - reference_microstep_time_us_) >= microstep_period_us_) {
     MoveByMicrostep();
     reference_microstep_time_us_ = current_time_us;
   }
@@ -589,8 +588,8 @@ void StepperDriver::CalculateMicrostepPeriodInFlux() {
 }
 
 void StepperDriver::MoveByMicrostepAtMicrostepPeriodInFlux() {
-  uint64_t current_time_us = micros();
-  if (current_time_us - reference_microstep_flux_time_us_ >= microstep_period_in_flux_us_) {
+  if (uint64_t current_time_us = micros(); 
+      (current_time_us - reference_microstep_flux_time_us_) >= microstep_period_in_flux_us_) {
     MoveByMicrostep();
     CalculateMicrostepPeriodInFlux();
     reference_microstep_flux_time_us_ = current_time_us;

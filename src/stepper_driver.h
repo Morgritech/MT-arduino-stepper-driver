@@ -18,26 +18,26 @@ class StepperDriver {
  public:
 
   /// @brief Enum of acceleration algorithms.
-  enum class AccelerationAlgorithm {
+  enum class AccelerationAlgorithm : uint8_t {
     kMorgridge24 = 1,
     kAustin05 = 2,
     kEiderman04 = 3,
   };
 
   /// @brief Enum of GPIO pin states.
-  enum class PinState {
+  enum class PinState : uint8_t {
     kLow = 0,
     kHigh,
   };
 
   /// @brief Enum of power states based on the ENA/EN pin.
-  enum class PowerState {
+  enum class PowerState : uint8_t {
     kDisabled = 0,
     kEnabled,
   };
 
   /// @brief Enum of angular speed unit.
-  enum class SpeedUnits {
+  enum class SpeedUnits : uint8_t {
     kMicrostepsPerSecond = 0,
     kDegreesPerSecond,
     kRadiansPerSecond,
@@ -45,7 +45,7 @@ class StepperDriver {
   };
 
   /// @brief Enum of angular acceleration units.
-  enum class AccelerationUnits {
+  enum class AccelerationUnits : uint8_t {
     kMicrostepsPerSecondPerSecond = 0,
     kDegreesPerSecondPerSecond,
     kRadiansPerSecondPerSecond,
@@ -53,7 +53,7 @@ class StepperDriver {
   };
 
   /// @brief Enum of angular units.
-  enum class AngleUnits {
+  enum class AngleUnits : uint8_t {
     kMicrosteps = 0,
     kDegrees,
     kRadians,
@@ -61,13 +61,13 @@ class StepperDriver {
   };
 
   /// @brief Enum of calculation options.
-  enum class CalculationOption {
+  enum class CalculationOption : uint8_t {
     kCalculateOnly = 0,
     kSetupMotion,
   };
 
   /// @brief Enum of the types of motion/motion control.
-  enum class MotionType {
+  enum class MotionType : uint8_t {
     kStopAndReset = 0,
     kPause,
     kResume,
@@ -76,7 +76,7 @@ class StepperDriver {
   };
 
   /// @brief Enum of motion status.
-  enum class MotionStatus {
+  enum class MotionStatus : uint8_t {
     kIdle = 0,
     kPaused,
     kAccelerate,
@@ -85,7 +85,7 @@ class StepperDriver {
   };
 
   /// @brief Enum of motor motion directions based on the DIR/CW pin.
-  enum class MotionDirection {
+  enum class MotionDirection : int8_t {
     kNegative = -1,
     kNeutral = 0,
     kPositive = 1,

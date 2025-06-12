@@ -9,40 +9,40 @@
 #include <stepper_driver.h>
 
 // GPIO pins.
-const uint8_t kPulPin = 11; ///< Output pin for the stepper driver PUL/STP/CLK (pulse/step) interface.
-const uint8_t kDirPin = 12; ///< Output pin for the stepper driver DIR/CW (direction) interface.
-const uint8_t kEnaPin = 13; ///< Output pin for the stepper driver ENA/EN (enable) interface.
+constexpr uint8_t kPulPin = 11; ///< Output pin for the stepper driver PUL/STP/CLK (pulse/step) interface.
+constexpr uint8_t kDirPin = 12; ///< Output pin for the stepper driver DIR/CW (direction) interface.
+constexpr uint8_t kEnaPin = 13; ///< Output pin for the stepper driver ENA/EN (enable) interface.
 
 // Serial properties.
-const int kBaudRate = 9600; ///< The serial communication speed.
+constexpr int kBaudRate = 9600; ///< The serial communication speed.
 
 // Serial control messages.
-const char kToggleMotionMessage = 'm'; ///< Serial message to toggle (start/stop) the motor.
-const char kToggleDirectionMessage = 'd'; ///< Serial message to change motor direction.
-const char kIncreaseSpeedMessage = '+'; ///< Serial message to increase motor speed.
-const char kDecreaseSpeedMessage = '-'; ///< Serial message to decrease motor speed.
+constexpr char kToggleMotionMessage = 'm'; ///< Serial message to toggle (start/stop) the motor.
+constexpr char kToggleDirectionMessage = 'd'; ///< Serial message to change motor direction.
+constexpr char kIncreaseSpeedMessage = '+'; ///< Serial message to increase motor speed.
+constexpr char kDecreaseSpeedMessage = '-'; ///< Serial message to decrease motor speed.
 
 // Stepper motor/drive system properties.
-const float kFullStepAngle_degrees = 1.8F; ///< The stepper motor full step angle in degrees. Obtained from the motor data sheet.
-const float kGearRatio = 1.0F; ///< The system/stepper motor gear ratio (1 if not using a gearing system or a geared stepper motor).
+constexpr float kFullStepAngle_degrees = 1.8F; ///< The stepper motor full step angle in degrees. Obtained from the motor data sheet.
+constexpr float kGearRatio = 1.0F; ///< The system/stepper motor gear ratio (1 if not using a gearing system or a geared stepper motor).
 
 // Stepper driver properties.
-const uint16_t kMicrostepMode = 8; ///< Microstep mode (1/8). Remember to change the setting on the stepper driver to match.
+constexpr uint16_t kMicrostepMode = 8; ///< Microstep mode (1/8). Remember to change the setting on the stepper driver to match.
 // Minimum time (us) to delay after changing the state of a pin. Obtained from the stepper driver data sheet.
 // These values are for the StepperOnline DM542T stepper driver, but should work for most stepper drivers.
-const float kPulDelay_us = 2.5F; ///< Minimum delay (us) for the stepper driver PUL pin.
-const float kDirDelay_us = 5.0F; ///< Minimum delay (us) for the stepper driver Dir pin.
-const float kEnaDelay_us = 5.0F; ///< Minimum delay (us) for the stepper driver Ena pin.
+constexpr float kPulDelay_us = 2.5F; ///< Minimum delay (us) for the stepper driver PUL pin.
+constexpr float kDirDelay_us = 5.0F; ///< Minimum delay (us) for the stepper driver Dir pin.
+constexpr float kEnaDelay_us = 5.0F; ///< Minimum delay (us) for the stepper driver Ena pin.
 // Speed.
 float kSpeed_RPM = 20.0; ///< Rotation speed (RPM).
-const float kSpeedUpdater_RPM = 1.0F; ///< Amount (RPM) by which to increase/decrease speed when a speed message is received over serial.
+constexpr float kSpeedUpdater_RPM = 1.0F; ///< Amount (RPM) by which to increase/decrease speed when a speed message is received over serial.
 
 // Other properties.
-const uint16_t kStartupTime_ms = 1000; ///< Minimum startup/boot time in milliseconds (ms); based on the stepper driver.
+constexpr uint16_t kStartupTime_ms = 1000; ///< Minimum startup/boot time in milliseconds (ms); based on the stepper driver.
 
 /// @brief Stepper Driver instance for the stepper motor.
-mt::StepperDriver stepper_driver(kPulPin, kDirPin, kEnaPin, kMicrostepMode, kFullStepAngle_degrees, kGearRatio);
-//mt::StepperDriver stepper_driver(kPulPin, kDirPin, kEnaPin); // Default values: microstep mode = 1, full step angle = 1.8, gear ratio = 1.  
+mt::StepperDriver stepper_driver{kPulPin, kDirPin, kEnaPin, kMicrostepMode, kFullStepAngle_degrees, kGearRatio};
+//mt::StepperDriver stepper_driver{kPulPin, kDirPin, kEnaPin}; // Default values: microstep mode = 1, full step angle = 1.8, gear ratio = 1.  
 
 /// @brief The main application entry point for initialisation tasks.
 void setup() {
@@ -77,16 +77,14 @@ void setup() {
 
 /// @brief The continuously running function for repetitive tasks.
 void loop() {
-  // Variable to hold the serial message received.
-  static char serial_message;
   // Flag to keep track of when to move the motor based on a start/stop message received over serial.
   static bool move_motor = false;
   // Variable to keep track of the motion direction based on a direction message received over serial.
-  static mt::StepperDriver::MotionDirection motion_direction = mt::StepperDriver::MotionDirection::kPositive;
+  static auto motion_direction = mt::StepperDriver::MotionDirection::kPositive;
 
   // Check for and process serial messages, one character at a time.
   if (Serial.available() > 0) {
-    serial_message = Serial.read();
+    char serial_message = Serial.read();
     //Serial.print(serial_message);
 
     switch(serial_message) {
