@@ -45,13 +45,13 @@ constexpr float kSpeed_RPM = 20.0F; ///< Rotation speed (RPM).
 constexpr uint16_t kStartupTime_ms = 1000; ///< Minimum startup/boot time in milliseconds (ms); based on the stepper driver.
 
 /// @brief The Momentary Button instance for the direction button.
-auto direction_button = mt::MomentaryButton(kDirectionButtonPin, kDirectionButtonUnpressedPinState, kDirectionButtonDebouncePeriod_ms, kDirectionButtonShortPressPeriod_ms);
+mt::MomentaryButton direction_button{kDirectionButtonPin, kDirectionButtonUnpressedPinState, kDirectionButtonDebouncePeriod_ms, kDirectionButtonShortPressPeriod_ms};
 /// @brief The Momentary Button instance for the move button.
-auto move_button = mt::MomentaryButton(kMoveButtonPin, kMoveButtonUnpressedPinState, kMoveButtonDebouncePeriod_ms);
+mt::MomentaryButton move_button{kMoveButtonPin, kMoveButtonUnpressedPinState, kMoveButtonDebouncePeriod_ms};
 
 /// @brief Stepper Driver instance for the stepper motor.
-auto stepper_driver = mt::StepperDriver(kPulPin, kDirPin, kEnaPin, kMicrostepMode, kFullStepAngle_degrees, kGearRatio);
-//auto stepper_driver = mt::StepperDriver(kPulPin, kDirPin, kEnaPin); // Default values: microstep mode = 1, full step angle = 1.8, gear ratio = 1.  
+mt::StepperDriver stepper_driver{kPulPin, kDirPin, kEnaPin, kMicrostepMode, kFullStepAngle_degrees, kGearRatio};
+//mt::StepperDriver stepper_driver{kPulPin, kDirPin, kEnaPin}; // Default values: microstep mode = 1, full step angle = 1.8, gear ratio = 1.  
 
 /// @brief The main application entry point for initialisation tasks.
 void setup() {

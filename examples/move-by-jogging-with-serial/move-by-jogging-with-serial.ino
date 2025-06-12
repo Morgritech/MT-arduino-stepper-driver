@@ -41,8 +41,8 @@ constexpr float kSpeedUpdater_RPM = 1.0F; ///< Amount (RPM) by which to increase
 constexpr uint16_t kStartupTime_ms = 1000; ///< Minimum startup/boot time in milliseconds (ms); based on the stepper driver.
 
 /// @brief Stepper Driver instance for the stepper motor.
-auto stepper_driver = mt::StepperDriver(kPulPin, kDirPin, kEnaPin, kMicrostepMode, kFullStepAngle_degrees, kGearRatio);
-//auto stepper_driver = mt::StepperDriver(kPulPin, kDirPin, kEnaPin); // Default values: microstep mode = 1, full step angle = 1.8, gear ratio = 1.  
+mt::StepperDriver stepper_driver{kPulPin, kDirPin, kEnaPin, kMicrostepMode, kFullStepAngle_degrees, kGearRatio};
+//mt::StepperDriver stepper_driver{kPulPin, kDirPin, kEnaPin}; // Default values: microstep mode = 1, full step angle = 1.8, gear ratio = 1.  
 
 /// @brief The main application entry point for initialisation tasks.
 void setup() {
@@ -77,8 +77,6 @@ void setup() {
 
 /// @brief The continuously running function for repetitive tasks.
 void loop() {
-  // Variable to hold the serial message received.
-  static char serial_message;
   // Flag to keep track of when to move the motor based on a start/stop message received over serial.
   static bool move_motor = false;
   // Variable to keep track of the motion direction based on a direction message received over serial.
@@ -86,7 +84,7 @@ void loop() {
 
   // Check for and process serial messages, one character at a time.
   if (Serial.available() > 0) {
-    serial_message = Serial.read();
+    char serial_message = Serial.read();
     //Serial.print(serial_message);
 
     switch(serial_message) {

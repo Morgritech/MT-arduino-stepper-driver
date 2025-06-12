@@ -38,8 +38,8 @@ constexpr float kAcceleration_microsteps_per_s_per_s = 7000.0; ///< Acceleration
 constexpr uint16_t kStartupTime_ms = 1000; ///< Minimum startup/boot time in milliseconds (ms); based on the stepper driver.
 
 /// @brief Stepper Driver instance for the stepper motor.
-auto stepper_driver = mt::StepperDriver(kPulPin, kDirPin, kEnaPin, kMicrostepMode, kFullStepAngle_degrees, kGearRatio);
-//auto stepper_driver = mt::StepperDriver(kPulPin, kDirPin, kEnaPin); // Default values: microstep mode = 1, full step angle = 1.8, gear ratio = 1. 
+mt::StepperDriver stepper_driver{kPulPin, kDirPin, kEnaPin, kMicrostepMode, kFullStepAngle_degrees, kGearRatio};
+//mt::StepperDriver stepper_driver{kPulPin, kDirPin, kEnaPin}; // Default values: microstep mode = 1, full step angle = 1.8, gear ratio = 1. 
 
 /// @brief The main application entry point for initialisation tasks.
 void setup() {
@@ -83,7 +83,7 @@ void loop() {
   // Variable to keep track of the sweep angle and direction.
   static float sweep_angle_degrees = kSweepAngle_degrees;
   // Variable to keep track of the motion status.
-  static mt::StepperDriver::MotionStatus motion_status;
+  static mt::StepperDriver::MotionStatus motion_status{};
   // Variable to specify the motion type.
   static auto motion_type = mt::StepperDriver::MotionType::kRelative;
 
